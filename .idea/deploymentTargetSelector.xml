@@ -15,10 +15,10 @@
       </SelectionState>
       <SelectionState runConfigName="mobile">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-12-01T09:00:23.222455500Z">
+        <DropdownSelection timestamp="2024-11-24T10:10:13.054424100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=231caf58250c7ece" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\saich\.android\avd\Television_720p_API_30.avd" />
             </handle>
           </Target>
         </DropdownSelection>

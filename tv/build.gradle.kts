@@ -1,26 +1,25 @@
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
-    id("kotlin-kapt")
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.google.gms.google.services)
     alias(libs.plugins.google.firebase.crashlytics)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.ksp)
 
 }
 
 android {
     namespace = "com.charan.setupBox"
-    compileSdk = 34
+    compileSdk = 36
     val key:String=com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("SUPABASE_ANON_KEY")
 
     val url:String=com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("SUPABASE_URL")
 
     defaultConfig {
         applicationId = "com.charan.setupBox"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 23
+        targetSdk = 36
         versionCode = 3
         versionName = "2.1"
         vectorDrawables {
@@ -45,9 +44,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -63,39 +59,51 @@ android {
 }
 
 dependencies {
-
+    // AndroidX / Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.navigation.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui.tooling.preview)
-    implementation (libs.postgrest.kt)
-    implementation (libs.realtime.kt)
-    implementation (libs.storage.kt)
-    implementation(libs.firebase.crashlytics)
-    annotationProcessor (libs.androidx.room.compiler)
-    implementation (libs.androidx.room.runtime)
-    implementation (libs.androidx.room.ktx)
-    implementation(libs.auth.kt)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation (libs.androidx.runtime.livedata)
-    kapt("androidx.room:room-compiler:2.6.1")
-    implementation(libs.coil.compose)
-    implementation (libs.ktor.client.core)
-    implementation (libs.ktor.utils)
-    implementation(libs.ktor.client.cio)
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
+
+    // Supabase
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.postgrest.kt)
+    implementation(libs.auth.kt)
+    implementation(libs.realtime.kt)
+
+    // Networking (Ktor)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+
+    // DI
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    ksp(libs.hilt.compiler)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Compose utilities
+    implementation(libs.compose.material)
+    implementation(libs.coil.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    // Firebase
+    implementation(libs.firebase.crashlytics)
+
+    // Test / debug
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    implementation ("androidx.core:core-splashscreen:1.0.1")
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation (libs.hilt.android)
-    kapt (libs.hilt.compiler)
-    implementation (libs.androidx.hilt.navigation.compose)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.navigation.compose)
-    implementation ("androidx.compose.material:material:1.7.5")
 }
