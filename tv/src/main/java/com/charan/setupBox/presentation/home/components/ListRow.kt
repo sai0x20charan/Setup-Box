@@ -20,6 +20,11 @@ fun ListRow(
 
     LazyRow {
         items(items.size) { index ->
+            if (shouldRequestFocus) {
+                LaunchedEffect(key1 = Unit) {
+                    focusRequester.requestFocus()
+                }
+            }
             CardItem(
                 item = items[index],
                 modifier = Modifier.then(
@@ -34,9 +39,5 @@ fun ListRow(
         }
     }
 
-    if (shouldRequestFocus) {
-        LaunchedEffect(key1 = Unit) {
-            focusRequester.requestFocus()
-        }
-    }
+
 }
