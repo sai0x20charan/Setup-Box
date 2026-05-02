@@ -1,5 +1,6 @@
 package com.charan.setupBox.data.repository.impl
 
+import android.se.omapi.Session
 import android.util.Log
 import com.charan.setupBox.data.local.entity.SetupBoxContent
 import com.charan.setupBox.data.remote.responsedto.TVAuthentication
@@ -12,11 +13,11 @@ import com.charan.setupBox.utils.LoginState
 import com.charan.setupBox.utils.ProcessState
 import com.charan.setupBox.utils.SupabaseUtils
 import io.github.jan.supabase.annotations.SupabaseExperimental
-import io.github.jan.supabase.gotrue.OtpType
-import io.github.jan.supabase.gotrue.SessionStatus
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.providers.builtin.IDToken
-import io.github.jan.supabase.gotrue.providers.builtin.OTP
+import io.github.jan.supabase.auth.OtpType
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.auth.providers.builtin.OTP
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
@@ -164,17 +165,14 @@ class SupabaseRepoImp @Inject constructor(private val setUpBoxRepo: SetUpBoxCont
                     }
                     ProcessState.Error("User not authenticated")
                 }
-                SessionStatus.LoadingFromStorage -> {
-                    println("Loading from storage ....")
+                is SessionStatus.Initializing -> {
+                    println("Initializing authentication status...")
                     ProcessState.Loading
                 }
-                SessionStatus.NetworkError -> {
-                    println("Network error")
-                    ProcessState.Error("Network error")
+                is SessionStatus.RefreshFailure -> {
+                    ProcessState.Error("Session refresh failed: ${sessionStatus.cause}")
                 }
             }
-        }.onEach { processState ->
-            println("Emitted process state: $processState")
         }
     }
 

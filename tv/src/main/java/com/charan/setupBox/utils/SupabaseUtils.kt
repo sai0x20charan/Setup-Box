@@ -2,7 +2,7 @@ package com.charan.setupBox.utils
 
 import android.content.Context
 import com.charan.setupBox.data.remote.supabaseClient
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 
 object SupabaseUtils {
 

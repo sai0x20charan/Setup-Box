@@ -1,19 +1,22 @@
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
-    id("kotlin-kapt")
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.google.gms.google.services)
     alias(libs.plugins.google.firebase.crashlytics)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.mikepenz.aboutlibrary)
+    alias(libs.plugins.google.ksp)
 
 }
 
 android {
     namespace = "com.charan.setupBox"
-    compileSdk = 34
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 0
+        }
+    }
     val key:String=com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("SUPABASE_ANON_KEY")
 
     val url:String=com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("SUPABASE_URL")
@@ -22,8 +25,8 @@ android {
 
     defaultConfig {
         applicationId = "com.charan.setupBox"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 37
         versionCode = 3
         versionName = "2.2"
 
@@ -47,12 +50,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
     buildFeatures {
-        buildConfig = true
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion ="1.5.2"
@@ -61,44 +61,60 @@ android {
 }
 
 dependencies {
-
+    // AndroidX / UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.material3.android)
     implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.compose.material.icons.extended.android)
+
+    // Navigation / lifecycle
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.runtime.livedata)
+
+    // Supabase
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.postgrest.kt)
+    implementation(libs.auth.kt)
+    implementation(libs.realtime.kt)
+
+    // Networking (Ktor)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+
+    // DI
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    ksp(libs.hilt.compiler)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Google sign-in / identity
+    implementation(libs.androidx.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.play.services.auth)
+
+    // Compose utilities
+    implementation(libs.coil.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    // About screen
+    implementation(libs.aboutlibraries.core)
+    implementation(libs.aboutlibraries.compose.m3)
+
+    // Firebase
     implementation(libs.firebase.crashlytics)
+
+    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation (libs.postgrest.kt)
-    implementation (libs.androidx.room.runtime)
-    implementation (libs.androidx.room.ktx)
-    implementation (libs.realtime.kt)
-    implementation (libs.storage.kt)
-    annotationProcessor (libs.androidx.room.compiler)
-    kapt("androidx.room:room-compiler:2.6.1")
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.auth.kt)
-    implementation(libs.coil.compose)
-    implementation (libs.androidx.core.splashscreen)
-    implementation("androidx.compose.material:material-icons-extended-android:1.7.5")
-    implementation (libs.ktor.client.core)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation (libs.androidx.runtime.livedata)
-    implementation (libs.ktor.utils)
-    implementation(libs.ktor.client.cio)
-    implementation (libs.hilt.android)
-    kapt (libs.hilt.compiler)
-    implementation (libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.credentials)
-    implementation(libs.credentials.play.services.auth)
-    implementation( libs.androidx.credentials)
-    implementation (libs.credentials.play.services.auth)
-    implementation (libs.googleid)
-    implementation (libs.play.services.auth)
-    implementation (libs.aboutlibraries.core)
-    implementation(libs.aboutlibraries.compose.m3)
 }
