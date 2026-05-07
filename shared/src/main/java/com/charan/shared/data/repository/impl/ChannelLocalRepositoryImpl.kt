@@ -1,0 +1,35 @@
+package com.charan.shared.data.repository.impl
+
+import com.charan.shared.data.local.dao.ChannelDao
+import com.charan.shared.data.local.entity.ChannelEntity
+import com.charan.shared.data.repository.ChannelLocalRepository
+import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+
+class ChannelLocalRepositoryImpl @Inject constructor(
+    private val channelDao: ChannelDao
+) : ChannelLocalRepository {
+    override suspend fun upsert(channel: ChannelEntity) = channelDao.upsert(channel)
+
+    override suspend fun update(channel: ChannelEntity) = channelDao.update(channel)
+
+    override suspend fun deleteByUuid(uuid: String) = channelDao.deleteByUuid(uuid)
+
+    override fun getAllData(): Flow<List<ChannelEntity>> = channelDao.getAllData()
+
+    override suspend fun getById(id: Long): ChannelEntity {
+        return channelDao.getAllData(id)
+    }
+
+    override fun getUnSyncedData(): Flow<List<ChannelEntity>> {
+        return channelDao.getUnSyncedData()
+    }
+
+        override suspend fun deleteByUUID(uuid: String) {
+            channelDao.markAsDeleted(uuid)
+        }
+
+    override fun getUnSyncedDataCount(): Flow<Int> {
+        return channelDao.getUnSyncedDataCount()
+    }
+}

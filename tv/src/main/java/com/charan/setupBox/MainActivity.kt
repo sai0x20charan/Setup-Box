@@ -24,7 +24,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
 import com.charan.setupBox.presentation.navigation.NavAppHost
 import com.charan.setupBox.ui.theme.SetupBoxTheme
-import com.charan.setupBox.utils.SupabaseUtils
+import com.charan.shared.supabase.SupabaseUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

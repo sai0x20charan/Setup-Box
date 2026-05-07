@@ -1,70 +1,76 @@
 package com.charan.setupBox.presentation.home
-
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.charan.setupBox.data.local.entity.SetupBoxContent
-import com.charan.setupBox.data.repository.SetUpBoxRepo
-import com.charan.setupBox.data.repository.SupabaseRepo
-import com.charan.setupBox.utils.ProcessState
+import com.charan.setupBox.presentation.common.mappers.toChannelDataList
+import com.charan.shared.data.repository.ChannelLocalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val supabaseRepo: SupabaseRepo,
-    private val setUpBoxRepo: SetUpBoxRepo
+    private val channelLocalRepository: ChannelLocalRepository
 ) : ViewModel() {
 
-    private val _allData = MutableStateFlow(emptyList<SetupBoxContent>())
-    val allData = _allData.asStateFlow()
-    private val _showDropDownMenu = MutableStateFlow(false)
-    val showDropDownMenu = _showDropDownMenu.asStateFlow()
+    private val _homeState = MutableStateFlow(HomeState())
+    val homeState = _homeState.asStateFlow()
 
-    private val _refreshState = MutableStateFlow<ProcessState?>(null)
-    val refreshState = _refreshState.asStateFlow()
+    private val _homeEffects = MutableSharedFlow<HomeEffect?>()
+    val homeEffect = _homeEffects.asSharedFlow()
 
     init {
+        loadData()
+    }
 
-        viewModelScope.launch {
-            setUpBoxRepo.getAllData().collectLatest {
-                _allData.tryEmit(it)
+    private fun loadData() = viewModelScope.launch(Dispatchers.IO){
+        channelLocalRepository.getAllData().collectLatest { data->
+            _homeState.update {
+                it.copy(
+                    allChannelData = data.toChannelDataList()
+                )
             }
         }
-        getSupabaseData()
-
     }
 
-
-    fun getSupabaseData(){
-
-        _refreshState.tryEmit(ProcessState.Loading)
-        viewModelScope.launch(Dispatchers.IO) {
-            supabaseRepo.getData().collectLatest {
-                _refreshState.tryEmit(it)
+    fun onEvent(event : HomeEvent){
+        when(event){
+            is HomeEvent.OnChannelClick -> {
+                handleEffects(HomeEffect.NavigateToAddChannelScreen(event.id))
             }
+            HomeEvent.OnRefresh -> {
+                loadData()
+            }
+            HomeEvent.OnSettingsClick -> {
+                handleEffects(HomeEffect.NavigateToSettingsScreen)
+            }
+            HomeEvent.ToggleShowDropDown -> {
+                handleShowDropDown()
 
+            }
         }
+    }
 
-
+    private fun handleShowDropDown(){
+        _homeState.update {
+            it.copy(
+                showDropDown = !it.showDropDown
+            )
+        }
     }
 
 
-    fun showDropDownMenu(){
-        _showDropDownMenu.value = true
-    }
+    private fun handleEffects(effect: HomeEffect) = viewModelScope.launch{
+        _homeEffects.emit(effect)
 
-    fun hideDropDownMenu(){
-        _showDropDownMenu.value = false
-    }
 
+    }
 
 
 

@@ -12,7 +12,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.ModalNavigationDrawer
 import androidx.tv.material3.NavigationDrawerItem
 import androidx.tv.material3.Text
-import com.charan.setupBox.utils.SupabaseUtils
+import com.charan.shared.supabase.SupabaseUtils
 
 @Composable
 fun ModelDrawer(){

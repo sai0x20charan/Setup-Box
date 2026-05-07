@@ -25,7 +25,6 @@ import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import com.charan.setupBox.presentation.home.components.AvatarImageCard
-import com.charan.setupBox.utils.SupabaseUtils
 
 @Composable
 fun TopBar(
@@ -71,7 +70,7 @@ fun TopBar(
                     }
 
                     AvatarImageCard(
-                        imageUrl = SupabaseUtils.getProfilePic()
+                        imageUrl = UserSessionManager.getProfilePic()
                     ) {
                         onOpen()
                     }

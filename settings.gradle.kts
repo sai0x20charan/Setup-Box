@@ -22,4 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "Setup Box"
 include(":mobile")
 include(":tv")
- 
+include(":shared")

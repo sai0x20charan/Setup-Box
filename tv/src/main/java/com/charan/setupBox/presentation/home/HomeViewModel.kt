@@ -11,55 +11,62 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(private val supabaseRepo: SupabaseRepo,private val setUpBoxContentRepository: SetUpBoxContentRepository): ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val supabaseRepo: SupabaseRepo,
+    private val setUpBoxContentRepository: SetUpBoxContentRepository
+) : ViewModel() {
 
-    private val _allData = MutableStateFlow(emptyList<SetupBoxContent>())
-    val allData = _allData.asStateFlow()
-    private val _openModalSheet = MutableStateFlow(false)
-    val openModalSheet = _openModalSheet.asStateFlow()
+    data class UiState(
+        val allData: List<SetupBoxContent> = emptyList(),
+        val openModalSheet: Boolean = false,
+        val logoutState: ProcessState? = null
+    )
 
-    private val _logoutState = MutableStateFlow<ProcessState?>(null)
-    val logoutState = _logoutState.asStateFlow()
+    sealed interface Intent {
+        data object Refresh : Intent
+        data object ToggleModalSheet : Intent
+        data object Logout : Intent
+        data object ConsumeLogoutState : Intent
+    }
+
+    private val _uiState = MutableStateFlow(UiState())
+    val uiState = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
             setUpBoxContentRepository.getAllData().collectLatest {
-                _allData.tryEmit(it)
+                _uiState.update { state -> state.copy(allData = it) }
             }
         }
-        getSupabaseData()
-
+        refresh()
     }
 
-    private fun insert(setupBoxContent: SetupBoxContent)=viewModelScope.launch(Dispatchers.IO){
-        setUpBoxContentRepository.insert(setupBoxContent)
+    fun onIntent(intent: Intent) {
+        when (intent) {
+            Intent.Refresh -> refresh()
+            Intent.ToggleModalSheet -> _uiState.update { it.copy(openModalSheet = !it.openModalSheet) }
+            Intent.Logout -> logout()
+            Intent.ConsumeLogoutState -> _uiState.update { it.copy(logoutState = null) }
+        }
     }
 
-    fun getSupabaseData() = viewModelScope.launch (Dispatchers.IO){
-        supabaseRepo.getDataFromSupabase()
+    private fun refresh() {
+        viewModelScope.launch(Dispatchers.IO) {
+            supabaseRepo.getDataFromSupabase()
+        }
     }
 
-    fun modalSheetState(){
-        _openModalSheet.value = !_openModalSheet.value
-    }
-
-    fun logout(){
-        _logoutState.tryEmit(ProcessState.Loading)
+    private fun logout() {
+        _uiState.update { it.copy(logoutState = ProcessState.Loading) }
         viewModelScope.launch(Dispatchers.IO) {
             supabaseRepo.logout().collectLatest {
-                _logoutState.tryEmit(it)
+                _uiState.update { state -> state.copy(logoutState = it) }
             }
-
-
         }
     }
-
-
-
-
-
 }

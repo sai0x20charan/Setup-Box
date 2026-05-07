@@ -6,17 +6,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-
-
-
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,16 +46,14 @@ import androidx.tv.material3.Text
 import com.charan.setupBox.BuildConfig
 import com.charan.setupBox.presentation.ViewModel.HomeViewModel
 import com.charan.setupBox.presentation.home.components.AvatarImage
-import com.charan.setupBox.presentation.home.components.AvatarImageCard
 import com.charan.setupBox.presentation.home.components.ListRow
 import com.charan.setupBox.presentation.home.components.TitleText
 import com.charan.setupBox.presentation.navigation.HomeScreenNav
 import com.charan.setupBox.presentation.navigation.LoginScreenNav
-
 import com.charan.setupBox.utils.AppConstants
 import com.charan.setupBox.utils.AppUtils
 import com.charan.setupBox.utils.ProcessState
-import com.charan.setupBox.utils.SupabaseUtils
+import com.charan.shared.supabase.SupabaseUtils
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -70,60 +62,42 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val data = viewModel.allData.collectAsState()
-    val newsItems = data.value.filter { it.Category == AppConstants.NEWS }
-    val entertainment = data.value.filter { it.Category == AppConstants.ENTERTAINMENT }
-    val sport = data.value.filter { it.Category == AppConstants.SPORTS }
-    val modalSheetState by viewModel.openModalSheet.collectAsState()
-    val logoutState by viewModel.logoutState.collectAsState()
-    LaunchedEffect(key1 = logoutState) {
-        when(logoutState){
-            is ProcessState.Error -> {
-                Toast.makeText(context, (logoutState as ProcessState.Error).error,Toast.LENGTH_LONG).show()
-            }
+    val uiState by viewModel.uiState.collectAsState()
+    val newsItems = uiState.allData.filter { it.Category == AppConstants.NEWS }
+    val entertainment = uiState.allData.filter { it.Category == AppConstants.ENTERTAINMENT }
+    val sport = uiState.allData.filter { it.Category == AppConstants.SPORTS }
 
+    LaunchedEffect(uiState.logoutState) {
+        when (val logoutState = uiState.logoutState) {
+            is ProcessState.Error -> {
+                Toast.makeText(context, logoutState.error, Toast.LENGTH_LONG).show()
+                viewModel.onIntent(HomeViewModel.Intent.ConsumeLogoutState)
+            }
             is ProcessState.Success -> {
                 navHostController.navigate(LoginScreenNav) {
-                    popUpTo(HomeScreenNav) {
-                        inclusive = true
-                    }
+                    popUpTo(HomeScreenNav) { inclusive = true }
                 }
-
+                viewModel.onIntent(HomeViewModel.Intent.ConsumeLogoutState)
             }
-           else -> Unit
+            else -> Unit
         }
-
     }
+
     val focusRequester = remember { FocusRequester() }
-    BackHandler(modalSheetState) {
-        viewModel.modalSheetState()
+    BackHandler(uiState.openModalSheet) {
+        viewModel.onIntent(HomeViewModel.Intent.ToggleModalSheet)
     }
 
-
-
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        
-
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         LazyColumn(
-            modifier = Modifier,
             contentPadding = PaddingValues(0.dp),
-            reverseLayout = false,
             horizontalAlignment = Alignment.Start,
             userScrollEnabled = true
         ) {
             item {
                 TopBar(
-                    onRefresh = {
-                        viewModel.getSupabaseData()
-                    },
-                    onOpen = {
-                        viewModel.modalSheetState()
-                    }
+                    onRefresh = { viewModel.onIntent(HomeViewModel.Intent.Refresh) },
+                    onOpen = { viewModel.onIntent(HomeViewModel.Intent.ToggleModalSheet) }
                 )
             }
             item { TitleText(AppConstants.NEWS) }
@@ -131,9 +105,7 @@ fun HomeScreen(
                 if (newsItems.isNotEmpty()) {
                     ListRow(
                         items = newsItems,
-                        onClick = { item ->
-                            AppUtils.openLink(context, item.app_Package!!, item.channelLink!!)
-                        },
+                        onClick = { item -> AppUtils.openLink(context, item.app_Package!!, item.channelLink!!) },
                         shouldRequestFocus = true
                     )
                 }
@@ -141,55 +113,42 @@ fun HomeScreen(
             item { TitleText(title = AppConstants.ENTERTAINMENT) }
             item {
                 if (entertainment.isNotEmpty()) {
-                    ListRow(
-                        items = entertainment,
-                        onClick = { item ->
-                            AppUtils.openLink(context, item.app_Package!!, item.channelLink!!)
-                        }
-                    )
+                    ListRow(items = entertainment) { item ->
+                        AppUtils.openLink(context, item.app_Package!!, item.channelLink!!)
+                    }
                 }
             }
             item { TitleText(AppConstants.SPORTS) }
             item {
                 if (sport.isNotEmpty()) {
-                    ListRow(
-                        items = sport,
-                        onClick = { item ->
-                            AppUtils.openLink(context, item.app_Package!!, item.channelLink!!)
-                        }
-                    )
+                    ListRow(items = sport) { item ->
+                        AppUtils.openLink(context, item.app_Package!!, item.channelLink!!)
+                    }
                 }
             }
         }
 
-        
-        if (modalSheetState) {
+        if (uiState.openModalSheet) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable { viewModel.modalSheetState() }
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).clickable {
+                    viewModel.onIntent(HomeViewModel.Intent.ToggleModalSheet)
+                }
             )
 
-
             AnimatedVisibility(
-                visible = modalSheetState,
+                visible = uiState.openModalSheet,
                 enter = slideInHorizontally(initialOffsetX = { it }),
                 exit = slideOutHorizontally(targetOffsetX = { it }),
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 ModalDrawerContent(
                     focusRequester,
-                    onLogout = {
-                        viewModel.logout()
-                    },
-                    isLogingOut = logoutState is ProcessState.Loading
+                    onLogout = { viewModel.onIntent(HomeViewModel.Intent.Logout) },
+                    isLogingOut = uiState.logoutState is ProcessState.Loading
                 )
             }
-            LaunchedEffect(modalSheetState) {
-                if (modalSheetState) {
-                    focusRequester.requestFocus()
-                }
+            LaunchedEffect(uiState.openModalSheet) {
+                if (uiState.openModalSheet) focusRequester.requestFocus()
             }
         }
     }
@@ -198,28 +157,18 @@ fun HomeScreen(
 @Composable
 fun ModalDrawerContent(
     focusRequester: FocusRequester,
-    onLogout : () -> Unit,
-    isLogingOut : Boolean
+    onLogout: () -> Unit,
+    isLogingOut: Boolean
 ) {
     Box(
-        modifier = Modifier
-            .width(300.dp)
-            .fillMaxHeight()
-            .padding(5.dp)
-            .clip(RoundedCornerShape(16.dp))
-
+        modifier = Modifier.width(300.dp).fillMaxHeight().padding(5.dp).clip(RoundedCornerShape(16.dp))
     ) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(15.dp)
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).padding(15.dp)
         ) {
             item {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 25.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 25.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AvatarImage(imageUrl = SupabaseUtils.getProfilePic())
@@ -233,32 +182,23 @@ fun ModalDrawerContent(
                 ListItem(
                     enabled = !isLogingOut,
                     selected = true,
-                    onClick = { onLogout() },
+                    onClick = onLogout,
                     modifier = Modifier.focusRequester(focusRequester),
                     headlineContent = { Text(text = "Logout") },
-                    leadingContent = {
-                        Icon(Icons.AutoMirrored.Outlined.ExitToApp, contentDescription = "Logout")
-                    },
+                    leadingContent = { Icon(Icons.AutoMirrored.Outlined.ExitToApp, contentDescription = "Logout") },
                     trailingContent = {
                         AnimatedVisibility(visible = isLogingOut) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeCap = StrokeCap.Round)
-                            
                         }
                     }
-
                 )
             }
         }
 
-        
         Text(
             text = "Setup Box ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
         )
     }
 }
-
-

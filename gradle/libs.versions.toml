@@ -54,6 +54,7 @@ androidx-material3-android = { module = "androidx.compose.material3:material3-an
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 postgrest-kt = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt" }
+functions-kt = {module = "io.github.jan-tennert.supabase:functions-kt"}
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "bom" }
 compose-material = { module = "androidx.compose.material:material", version.ref = "composeMaterial" }
 compose-material-icons-extended-android = { module = "androidx.compose.material:material-icons-extended-android", version.ref = "composeMaterialIconsExtendedAndroid" }
@@ -98,3 +99,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 hilt-android = {id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid"}
 mikepenz-aboutlibrary = {id = "com.mikepenz.aboutlibraries.plugin",version.ref = "aboutlibrariesCore"}
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+android-library = { id = "com.android.library", version.ref = "agp" }

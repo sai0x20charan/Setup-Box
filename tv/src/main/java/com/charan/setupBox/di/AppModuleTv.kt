@@ -7,6 +7,7 @@ import com.charan.setupBox.data.repository.SupabaseRepo
 import com.charan.setupBox.data.repository.impl.SetUpBoxRepoImp
 import com.charan.setupBox.data.repository.impl.SupabaseRepoImp
 import com.charan.setupBox.repository.SetUpBoxContentRepository
+import com.charan.shared.sync.SyncManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -38,8 +39,9 @@ class AppModuleTv {
 
     @Provides
     fun provideSupabaseRepo(
-        setUpBoxContentRepository: SetUpBoxContentRepository
+        setUpBoxContentRepository: SetUpBoxContentRepository,
+        syncManager: SyncManager
     ) : SupabaseRepo {
-        return SupabaseRepoImp(setUpBoxContentRepository)
+        return SupabaseRepoImp(setUpBoxContentRepository, syncManager)
     }
 }

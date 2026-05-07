@@ -1,0 +1,7 @@
+package com.charan.setupBox.presentation.settings.settings
+
+sealed class SettingsEffect {
+        object NavigateToLoginScreen : SettingsEffect()
+        object NavigateToAccountScreen : SettingsEffect()
+        object NavigateToAboutAppScreen : SettingsEffect()
+}
