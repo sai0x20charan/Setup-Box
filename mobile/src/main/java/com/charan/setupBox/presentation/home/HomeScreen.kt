@@ -1,16 +1,10 @@
 package com.charan.setupBox.presentation.home
-
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
@@ -30,185 +24,117 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-
-import androidx.navigation.NavHostController
-import coil.compose.AsyncImage
-import com.charan.setupBox.presentation.navigation.AddNewChannelScreenNav
-import com.charan.setupBox.presentation.navigation.SettingsScreenNav
-import com.charan.setupBox.utils.AppUtils
-
-import com.charan.setupBox.utils.ProcessState
-
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.charan.setupBox.presentation.common.components.ThumbnailImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navHostController: NavHostController,
-    sharedURL : String?,
-    homeViewModel : HomeViewModel = hiltViewModel()
+    homeViewModel : HomeViewModel = hiltViewModel(),
+    navigateToSettings : () -> Unit = {},
+    navigateToAddChannel : (id : Long?, channelLink : String?) -> Unit
+
 ) {
-    var channelLink by rememberSaveable {
-        mutableStateOf(sharedURL)
 
-    }
-    val textMeasurer = rememberTextMeasurer()
-    val textStyle = MaterialTheme.typography.titleLarge.copy(color = AppUtils.getTextColorForPlaceholder(), fontWeight = FontWeight.Bold)
-
+    val state by homeViewModel.homeState.collectAsStateWithLifecycle()
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val isRefreshing by homeViewModel.refreshState.collectAsState()
 
-    val showDropDown by homeViewModel.showDropDownMenu.collectAsState()
+    LaunchedEffect(Unit) {
+        homeViewModel.homeEffect.collect { effect ->
+            when(effect) {
+                is HomeEffect.NavigateToSettingsScreen -> {
+                    navigateToSettings()
+                }
+                is HomeEffect.NavigateToAddChannelScreen -> {
+                    navigateToAddChannel(effect.id, "")
+                }
 
-    
-    LaunchedEffect(key1 = Unit) {
-        if(channelLink.isNullOrEmpty().not()){
-            val id = -1
-            navHostController.navigate(AddNewChannelScreenNav(id = id, channelLink = channelLink))
-            channelLink = null
+                else -> {}
+            }
         }
     }
-    val allData=homeViewModel.allData.collectAsState()
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scroll.nestedScrollConnection),
-        {
+        modifier = Modifier.fillMaxSize().nestedScroll(scroll.nestedScrollConnection),
+        topBar = {
             LargeTopAppBar(
                 title = { Text("Setup Box") },
                 scrollBehavior = scroll,
                 actions = {
-                    IconButton(onClick = { homeViewModel.showDropDownMenu() }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More" )
-
+                    IconButton(onClick = {
+                        homeViewModel.onEvent(HomeEvent.ToggleShowDropDown)
+                    }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
                     }
                     DropdownMenu(
-                        expanded = showDropDown,
-                        onDismissRequest = { homeViewModel.hideDropDownMenu() }) {
+                        expanded = state.showDropDown,
+                        onDismissRequest = {
+                            homeViewModel.onEvent(HomeEvent.ToggleShowDropDown)
+                        }
+                    ) {
                         DropdownMenuItem(
                             text = { Text("Settings") },
-                            onClick = { navHostController.navigate(SettingsScreenNav);homeViewModel.hideDropDownMenu() })
-                        
+                            onClick = {
+                                homeViewModel.onEvent(HomeEvent.ToggleShowDropDown)
+                                homeViewModel.onEvent(HomeEvent.OnSettingsClick)
+
+                            }
+                        )
                     }
-
                 }
-
             )
-
         },
         floatingActionButton = {
-            val id=-1
-            FloatingActionButton(onClick = { navHostController.navigate(AddNewChannelScreenNav(id = id, channelLink = null)) }) {
+            FloatingActionButton(onClick = {
+                homeViewModel.onEvent(HomeEvent.OnChannelClick())
+            }) {
                 Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-
             }
         }
-    ){
+    ) {
         PullToRefreshBox(
-            isRefreshing = isRefreshing is ProcessState.Loading,
+            isRefreshing = state.loading,
             onRefresh = {
-                homeViewModel.getSupabaseData()
+                homeViewModel.onEvent(HomeEvent.OnRefresh)
             },
             modifier = Modifier.padding(it)
         ) {
-            Box(
-                modifier = Modifier
-
-            ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-
-
-                ) {
-                    items(allData.value.size) { item ->
+            Box {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(state.allChannelData.size) { item ->
+                        val channelData = state.allChannelData[item]
                         ListItem(
-                            {
+                            headlineContent = {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(top = 20.dp, bottom = 20.dp),
+                                    modifier = Modifier.fillMaxSize().padding(top = 20.dp, bottom = 20.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if(allData.value[item].channelPhoto.isNullOrEmpty().not()) {
-                                        AsyncImage(
-                                            model = allData.value[item].channelPhoto,
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .width(120.dp)
-                                                .height(71.dp)
-                                                .clip(RoundedCornerShape(10.dp))
-                                        )
-                                    } else {
-                                        Canvas(modifier = Modifier.width(120.dp)
-                                            .height(71.dp)
-                                            .clip(RoundedCornerShape(10.dp))) {
-                                            val text = allData.value[item].channelName.toString()
-                                            val textLayoutResult = textMeasurer.measure(text = text, style = textStyle)
-                                            val x = (size.width - textLayoutResult.size.width) / 2
-                                            val y = (size.height - textLayoutResult.size.height) / 2
-
-                                            drawRect(AppUtils.getColorForPlaceHolderBackground(),)
-                                            drawText(
-                                                textMeasurer,text,
-                                                style = textStyle,
-                                                topLeft = Offset(x, y),
-
-
-                                            )
-
-
-                                        }
-                                    }
+                                    ThumbnailImage(
+                                        imageUrl = channelData.channelPhoto,
+                                        width = 80,
+                                        height = 50,
+                                        fallBackText = channelData.channelName
+                                    )
                                     Text(
-                                        allData.value[item].channelName.toString(),
+                                        channelData.channelName,
                                         modifier = Modifier.padding(10.dp),
                                         style = MaterialTheme.typography.titleLarge
                                     )
                                 }
-
                             },
                             modifier = Modifier.clickable {
-                                navHostController.navigate(
-                                    AddNewChannelScreenNav(
-                                        id = allData.value[item].id,
-                                        channelLink = null
-                                    )
-                                )
+                                homeViewModel.onEvent(HomeEvent.OnChannelClick(channelData.id ?: -1))
                             }
                         )
-                        HorizontalDivider(modifier = Modifier)
-
+                        HorizontalDivider()
                     }
-
-
                 }
-
-
-
             }
         }
     }
-
-
-
-
-
-
 }

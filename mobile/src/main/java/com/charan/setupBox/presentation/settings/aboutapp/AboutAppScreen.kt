@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import com.charan.setupBox.BuildConfig
 import com.charan.setupBox.presentation.navigation.LicenseScreenNav
-import com.charan.setupBox.utils.AppConstants
+import com.charan.shared.utils.AppConstants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,31 +1,57 @@
 package com.charan.setupBox.presentation.login
-
-import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.charan.setupBox.data.repository.SupabaseRepo
-import com.charan.setupBox.utils.ProcessState
+import com.charan.shared.data.repository.SupabaseRepo
+import com.charan.shared.utils.ProcessState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
+
 @HiltViewModel
-class LoginViewModel @Inject constructor(private val supabaseRepo: SupabaseRepo) : ViewModel() {
+class LoginViewModel @Inject constructor(
+    private val supabaseRepo: SupabaseRepo
 
-    private val _googleAuthProcess = MutableStateFlow<ProcessState?>(null)
-    val googleAuthProcess = _googleAuthProcess.asStateFlow()
+) : ViewModel() {
+    private val _state = MutableStateFlow(LoginState())
+    val state = _state.asStateFlow()
 
+    private val _effect = MutableSharedFlow<LoginEffect>()
+    val effect = _effect.asSharedFlow()
 
+    fun onEvent(event : LoginEvent) {
+        when(event){
+            LoginEvent.OnLoginWithGoogleClick -> {
+                loginWithGoogle()
 
-    fun loginWithGoogle(context: Context)  {
-        _googleAuthProcess.tryEmit(ProcessState.Loading)
-        viewModelScope.launch {
-            supabaseRepo.loginWithGoogle(context).collectLatest {
-                _googleAuthProcess.tryEmit(it)
+            }
+        }
+
+    }
+
+    private fun loginWithGoogle() = viewModelScope.launch{
+        supabaseRepo.authenticateGoogleIdToken().collectLatest {
+            when(it){
+                is ProcessState.Error -> {
+                    handleLoading(false)
+                    Log.e("LoginViewModel", "Error during Google authentication: ${it.exception}")
+                    sendEffect(LoginEffect.ShowError(it.exception))
+                }
+                is ProcessState.Loading -> {
+                    handleLoading(true)
+                }
+
+                ProcessState.NotDetermined -> {}
+                is ProcessState.Success<*> -> {
+                    handleLoading(false)
+                    sendEffect(LoginEffect.NavigateToHomeScreen)
+                }
             }
 
         }
@@ -33,6 +59,15 @@ class LoginViewModel @Inject constructor(private val supabaseRepo: SupabaseRepo)
 
     }
 
+    private fun handleLoading(isLoading: Boolean){
+        _state.update { currentState->
+            currentState.copy(
+                isLoading = isLoading
+            )
+        }
+    }
 
-
+    private fun sendEffect(effect: LoginEffect)= viewModelScope.launch{
+        _effect.emit(effect)
+    }
 }

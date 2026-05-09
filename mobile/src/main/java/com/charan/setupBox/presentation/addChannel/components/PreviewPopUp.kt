@@ -10,10 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.charan.setupBox.presentation.common.components.ThumbnailImage
 
 @Composable
-fun PreviewAlertBox(imageLink:String,onClick:(Boolean)->Unit){
-    AlertDialog(onDismissRequest = {
+fun PreviewAlertBox(
+    imageLink:String,
+    onClick:(Boolean)->Unit
+) {
+    AlertDialog(
+        onDismissRequest = {
         onClick(false)
 
     }, confirmButton = {
@@ -23,12 +28,13 @@ fun PreviewAlertBox(imageLink:String,onClick:(Boolean)->Unit){
         }
 
     },
-
         title = {
             Text("Preview")
         },
         text = {
-            AsyncImage(model = imageLink, contentDescription = null, modifier = Modifier.fillMaxWidth().requiredHeight(100.dp).requiredWidth(300.dp))
+            ThumbnailImage(
+                imageUrl = imageLink
+            )
         }
 
     )

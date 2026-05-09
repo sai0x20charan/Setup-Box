@@ -4,16 +4,15 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import com.charan.setupBox.data.local.entity.SetupBoxContent
+import com.charan.setupBox.presentation.home.ChannelData
 
 @Composable
 fun ListRow(
-    items: List<SetupBoxContent>,
-    onClick: (item: SetupBoxContent) -> Unit,
+    items: List<ChannelData>,
+    onClick: (item: ChannelData) -> Unit,
     shouldRequestFocus: Boolean = false,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -26,7 +25,8 @@ fun ListRow(
                 }
             }
             CardItem(
-                item = items[index],
+                channelName = items[index].channelName,
+                channelPhoto = items[index].channelImage,
                 modifier = Modifier.then(
                     if (shouldRequestFocus && index == 0) {
                         Modifier.focusRequester(focusRequester)

@@ -25,7 +25,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,59 +36,35 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.charan.setupBox.presentation.navigation.HomeScreenNav
 import com.charan.setupBox.presentation.navigation.LoginScreenNav
-import com.charan.setupBox.presentation.settings.SettingsViewModel
 import com.charan.setupBox.presentation.settings.components.AvatarImage
+import com.charan.setupBox.presentation.settings.settings.SettingsEffect
+import com.charan.setupBox.presentation.settings.settings.SettingsEvent
+import com.charan.setupBox.presentation.settings.settings.SettingsViewModel
 import com.charan.setupBox.utils.ProcessState
-import com.charan.setupBox.utils.SupabaseUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
-    navHostController: NavHostController,
-    viewModel: SettingsViewModel = hiltViewModel()
-    ){
-    val logoutStatus by viewModel.logoutStatus.collectAsState()
-    val bottomSheetStatus by viewModel.bottomSheetStatus.collectAsState()
-    val textFieldValue by viewModel.textFieldValue.collectAsState()
-    val authenticationStatus by viewModel.authenticationStatus.collectAsState()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    navigateToBack : () -> Unit,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val context = LocalContext.current
-    LaunchedEffect(key1 = logoutStatus) {
-        when(logoutStatus){
-            is ProcessState.Error -> {
-                Toast.makeText(context, (logoutStatus as ProcessState.Error).error,Toast.LENGTH_LONG).show()
-            }
-
-            ProcessState.Success -> {
-
-                navHostController.navigate(LoginScreenNav) {
-                    popUpTo(HomeScreenNav(null)) {
-                        inclusive = true
-                    }
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is SettingsEffect.NavigateBack -> {
+                    navigateToBack()
                 }
-
+                else -> {}
             }
-            else -> Unit
-
         }
 
-    }
-    LaunchedEffect(key1 = authenticationStatus) {
-        when(authenticationStatus){
-            is ProcessState.Error -> {
-                Toast.makeText(context, (logoutStatus as ProcessState.Error).error,Toast.LENGTH_LONG).show()
-            }
-
-            ProcessState.Success -> {
-                viewModel.hideBottomSheet()
-                viewModel.resetAuthenticationCode()
-            }
-            else -> Unit
-        }
 
     }
     Scaffold(
@@ -98,110 +73,80 @@ fun AccountScreen(
                 title = { Text("Account") },
                 scrollBehavior = scroll,
                 navigationIcon = {
-                    IconButton(onClick = { navHostController.popBackStack()}) {
+                    IconButton(onClick = {
+                        viewModel.onEvent(SettingsEvent.OnBackClick)
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, "back")
-
                     }
                 }
             )
         }
     ) {
-        LazyColumn(modifier = Modifier
-            .fillMaxSize()
-            .padding(it)
-            .nestedScroll(scroll.nestedScrollConnection)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it)
+                .nestedScroll(scroll.nestedScrollConnection)
+        ) {
             item {
                 ListItem(
-                    leadingContent = {
-                        AvatarImage(imageUrl = SupabaseUtils.getProfilePic())
-                    },
-                    headlineContent = { Text(text = SupabaseUtils.getEmail() ?: "null") })
+                    leadingContent = { AvatarImage(imageUrl = state.profilePic) },
+                    headlineContent = { Text(text = state.userName) }
+                )
                 ListItem(
                     headlineContent = { Text(text = "Logout") },
-                    modifier = Modifier
-                        .padding(start = 20.dp)
-                        .clickable {
-                            viewModel.logout()
-                        },
+                    modifier = Modifier.padding(start = 20.dp).clickable {
+                        viewModel.onEvent(SettingsEvent.OnLogoutClick)
+                    },
                     trailingContent = {
-                        AnimatedVisibility(visible = logoutStatus is ProcessState.Loading) {
+                        AnimatedVisibility(visible = state.isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .fillMaxWidth(),
+                                modifier = Modifier.size(20.dp).fillMaxWidth(),
                                 strokeCap = StrokeCap.Round,
                                 strokeWidth = 3.dp
                             )
                         }
-
                     }
-
                 )
                 ListItem(
                     headlineContent = { Text(text = "Authenticate TV") },
-                    modifier = Modifier
-                        .padding(start = 20.dp)
-                        .clickable {
-                            viewModel.showModalBottomSheet()
-                        },
+                    modifier = Modifier.padding(start = 20.dp).clickable {
+                        viewModel.onEvent(SettingsEvent.OnToggleAuthenticationSheet)
+                    }
                 )
             }
-
         }
-
     }
 
-    if(bottomSheetStatus){
-        ModalBottomSheet(onDismissRequest = { viewModel.hideBottomSheet() }) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Enter Code",style= MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+    if (state.showEnterCodeDialog) {
+        ModalBottomSheet(onDismissRequest = { viewModel.onEvent(SettingsEvent.OnToggleAuthenticationSheet) }) {
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Enter Code", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
                 OutlinedTextField(
-                    value = textFieldValue,
-                    onValueChange = {
-                        viewModel.authenticateCode(it)
-                    },
-
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
+                    value = state.code,
+                    onValueChange = { viewModel.onEvent(SettingsEvent.OnAuthenticateCodeChange(it)) },
+                    modifier = Modifier.fillMaxWidth().padding(10.dp)
                 )
                 Button(
-                    onClick = { viewModel.addAuthenticationToken(context) },
-                    enabled = authenticationStatus !is ProcessState.Loading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
-
-                )
-                {
-                    Text(text = "Authenticate",
-                        modifier = Modifier
-                            .animateContentSize()
-                            .then(
-                                if (authenticationStatus is ProcessState.Loading) {
-                                    Modifier.padding(end = 10.dp)
-                                } else {
-                                    Modifier
-                                }
-                            )
+                    onClick = { viewModel.onEvent(SettingsEvent.OnAuthenticateClick) },
+                    enabled = !state.isLoading,
+                    modifier = Modifier.fillMaxWidth().padding(10.dp)
+                ) {
+                    Text(
+                        text = "Authenticate",
+                        modifier = Modifier.animateContentSize().then(
+                            if (state.isLoading) Modifier.padding(end = 10.dp) else Modifier
+                        )
                     )
-                    AnimatedVisibility(visible = authenticationStatus is ProcessState.Loading) {
+                    AnimatedVisibility(visible = state.isLoading) {
                         CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .fillMaxWidth(),
+                            modifier = Modifier.size(20.dp).fillMaxWidth(),
                             strokeCap = StrokeCap.Round,
                             strokeWidth = 3.dp
                         )
                     }
-
                 }
-
             }
-
         }
     }
 }

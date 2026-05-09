@@ -6,22 +6,35 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.internal.composableLambda
+import androidx.compose.runtime.remember
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.charan.setupBox.presentation.addChannel.AddNewChannel
+import com.charan.setupBox.presentation.addChannel.AddChannelScreen
 import com.charan.setupBox.presentation.home.HomeScreen
 import com.charan.setupBox.presentation.login.LoginScreen
-import com.charan.setupBox.presentation.settings.SettingsScreen
 import com.charan.setupBox.presentation.settings.aboutapp.AboutAppScreen
 import com.charan.setupBox.presentation.settings.aboutapp.LicenseScreen
 import com.charan.setupBox.presentation.settings.account.AccountScreen
-import com.charan.setupBox.presentation.tvAutentication.TVAuthentication
+import com.charan.setupBox.presentation.settings.settings.SettingsScreen
 
 @Composable
-fun NavigationAppHost(navHostController: NavHostController,sharedURL : String?,isLoggedIn : Boolean?) {
+fun NavigationAppHost(
+    navHostController: NavHostController,
+    sharedURL : String?,
+    isLoggedIn : Boolean?,
+) {
+
+    LaunchedEffect(sharedURL) {
+        if(!sharedURL.isNullOrBlank()){
+            navHostController.navigate(AddNewChannelScreenNav(id = null , sharedURL))
+        }
+    }
     NavHost(
         navController = navHostController,
 
@@ -56,28 +69,66 @@ fun NavigationAppHost(navHostController: NavHostController,sharedURL : String?,i
         },
     ){
         composable<HomeScreenNav> {
-            val args = it.toRoute<HomeScreenNav>()
-            HomeScreen(navHostController = navHostController, sharedURL = args.channelLink)
+            HomeScreen(
+                navigateToSettings = { navHostController.navigate(SettingsScreenNav) },
+                navigateToAddChannel = { id, channelLink ->
+                    navHostController.navigate(
+                        AddNewChannelScreenNav(
+                            id = id,
+                            channelLink = ""
+                        )
+                    )
+
+                },
+            )
         }
-        composable<AddNewChannelScreenNav> {
-            val args = it.toRoute<AddNewChannelScreenNav>()
-            AddNewChannel(navHostController = navHostController, id = args.id, sharedURL = args.channelLink)
+        composable<AddNewChannelScreenNav>(
+        ) {
+            AddChannelScreen(
+                navigateBack = {
+                    navHostController.popBackStack()
+                }
+            )
         }
         composable<LoginScreenNav> {
-            LoginScreen(navHostController = navHostController)
+            LoginScreen(
+                navigateToHomeScreen = {
+                    navHostController.navigate(HomeScreenNav(sharedURL))
+                }
+
+            )
         }
-        
-        composable<TVAuthenticationNav> { 
-            TVAuthentication(navHostController = navHostController)
+
+        composable<SettingsScreenNav> {
+            SettingsScreen(
+                navigateToAccountScreen = {
+                    navHostController.navigate(AccountScreenNav)
+                },
+                navigateToAboutAppScreen = {
+                    navHostController.navigate(AboutAppNav)
+                },
+                navigateBack = {
+                    navHostController.popBackStack()
+                },
+                viewModel = hiltViewModel(it)
+            )
         }
         composable<AccountScreenNav>(){
-            AccountScreen(navHostController = navHostController)
+            val settingsEntry = remember(it) {
+                navHostController.getBackStackEntry(SettingsScreenNav)
+            }
+
+            AccountScreen(
+                viewModel = hiltViewModel(settingsEntry),
+                navigateToBack = {
+                    navHostController.popBackStack()
+                }
+
+            )
         }
-        composable<AboutAppNav> { 
+        composable<AboutAppNav> {
+
             AboutAppScreen(navHostController = navHostController)
-        }
-        composable<SettingsScreenNav> {
-            SettingsScreen(navHostController = navHostController)
         }
         composable<LicenseScreenNav> {
             LicenseScreen(navHostController = navHostController)

@@ -73,6 +73,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
+
     // AndroidX / UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -108,11 +110,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Google sign-in / identity
-    implementation(libs.androidx.credentials)
-    implementation(libs.credentials.play.services.auth)
-    implementation(libs.googleid)
-    implementation(libs.play.services.auth)
+
 
     // Compose utilities
     implementation(libs.coil.compose)

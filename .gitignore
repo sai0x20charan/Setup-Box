@@ -17,3 +17,4 @@ local.properties
 /tv/google-services.json
 /.idea/
 /.kotlin/
+.hotswan/
