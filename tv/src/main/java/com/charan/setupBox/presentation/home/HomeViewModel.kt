@@ -90,7 +90,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun observeData() = viewModelScope.launch(Dispatchers.IO) {
-        channelLocalRepository.getAllData().collectLatest {
+        channelLocalRepository.getAllActiveData().collectLatest {
             val channels = it.toChannelDataList()
             val categories = channels.groupBy { it.channelCategory }.map {
                 Log.d("TAG", "observeData: ${it.key}")

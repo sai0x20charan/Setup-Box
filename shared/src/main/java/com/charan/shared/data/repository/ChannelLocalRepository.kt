@@ -7,7 +7,7 @@ interface ChannelLocalRepository {
     suspend fun upsert(channel: ChannelEntity)
     suspend fun update(channel: ChannelEntity)
     suspend fun deleteByUuid(uuid: String)
-    fun getAllData(): Flow<List<ChannelEntity>>
+    fun getAllActiveData(): Flow<List<ChannelEntity>>
 
     suspend fun getById(id : Long) : ChannelEntity
 

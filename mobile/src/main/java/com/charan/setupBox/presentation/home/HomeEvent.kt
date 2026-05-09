@@ -6,4 +6,6 @@ sealed class HomeEvent {
     data class OnChannelClick(val id : Long? = null) : HomeEvent()
     object OnSettingsClick : HomeEvent()
 
+    data object OnSyncClick : HomeEvent()
+
 }

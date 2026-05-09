@@ -12,6 +12,7 @@ fun ChannelEntity.toChannelData() : ChannelData {
         channelPhoto = this.channelPhoto,
         category = this.category,
         appPackage = this.appPackage,
+        isSynced = this.isSynced
     )
 }
 

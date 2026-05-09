@@ -7,5 +7,6 @@ data class ChannelData(
     val channelPhoto : String = "",
     val category : String = "",
     val appPackage : String = "",
-    val uuid : String = ""
+    val uuid : String = "",
+    val isSynced : Boolean = false
 )

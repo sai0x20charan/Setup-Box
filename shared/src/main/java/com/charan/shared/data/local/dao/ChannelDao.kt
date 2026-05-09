@@ -20,8 +20,8 @@ interface ChannelDao {
     @Query("DELETE FROM channels WHERE uuid = :uuid")
     suspend fun deleteByUuid(uuid: String)
 
-    @Query("SELECT * FROM channels")
-    fun getAllData(): Flow<List<ChannelEntity>>
+    @Query("SELECT * FROM channels WHERE isDeleted = 0")
+    fun getAllActiveData(): Flow<List<ChannelEntity>>
 
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun getAllData(id: Long): ChannelEntity

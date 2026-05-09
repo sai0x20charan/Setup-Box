@@ -15,7 +15,7 @@ class ChannelLocalRepositoryImpl @Inject constructor(
 
     override suspend fun deleteByUuid(uuid: String) = channelDao.deleteByUuid(uuid)
 
-    override fun getAllData(): Flow<List<ChannelEntity>> = channelDao.getAllData()
+    override fun getAllActiveData(): Flow<List<ChannelEntity>> = channelDao.getAllActiveData()
 
     override suspend fun getById(id: Long): ChannelEntity {
         return channelDao.getAllData(id)

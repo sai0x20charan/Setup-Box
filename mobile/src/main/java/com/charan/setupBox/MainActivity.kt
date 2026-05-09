@@ -1,10 +1,16 @@
 package com.charan.setupBox
 
 import android.content.Intent
+import android.os.Build
+import android.graphics.Color
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.charan.setupBox.presentation.navigation.NavigationAppHost
@@ -32,22 +39,32 @@ class MainActivity : AppCompatActivity() {
 
     @Inject lateinit var syncManager: SyncManager
 
-
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         lifecycleScope.launch {
             syncManager.syncListener()
         }
         sharedUrl = intent.getSharedURL().takeIf { it.isNotBlank() }
         installSplashScreen().setKeepOnScreenCondition { keepScreen }
+
+
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+
         setContent {
             LaunchedEffect(Unit) {
                 isLoggedIn = supabaseRepo.loadSession()
                 keepScreen = false
-
             }
             SetupBoxTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface() {
                     val navHostController = rememberNavController()
                     NavigationAppHost(
                         navHostController = navHostController,
