@@ -27,6 +27,8 @@ fun ChannelEntity.toChannelContentDto(email : String) : ChannelContentDto {
         channelName = this.channelName,
         channelPhoto = this.channelPhoto,
         channelLink = this.channelLink,
+        app_Package = this.appPackage,
+        category = this.category,
         email = email
     )
 }
