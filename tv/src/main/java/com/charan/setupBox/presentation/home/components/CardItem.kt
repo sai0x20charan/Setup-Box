@@ -30,15 +30,15 @@ import androidx.tv.material3.StandardCardContainer
 
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
-import com.charan.setupBox.utils.AppUtils
-import com.charan.setupBox.data.local.entity.SetupBoxContent
+import com.charan.shared.utils.AppUtils
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun CardItem(
-    item: SetupBoxContent,
+    channelPhoto : String,
+    channelName : String,
     modifier: Modifier,
-    onClick: (item : SetupBoxContent)-> Unit){
+    onClick : () -> Unit,){
     val textMeasurer = rememberTextMeasurer()
     val textStyle = MaterialTheme.typography.titleLarge.copy(color = AppUtils.getTextColorForPlaceholder(), fontWeight = FontWeight.Bold)
 
@@ -50,7 +50,7 @@ fun CardItem(
         imageCard = {
             Card(
                 onClick = {
-                    onClick(item)
+                    onClick()
                 },
                 interactionSource = it,
                 colors = CardDefaults.colors(containerColor = Color.Transparent),
@@ -61,9 +61,9 @@ fun CardItem(
 
 
             ) {
-                if(item.channelPhoto.isNullOrEmpty().not()) {
+                if(channelPhoto.isNullOrEmpty().not()) {
                     AsyncImage(
-                        model = item.channelPhoto,
+                        model = channelPhoto,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(CardDefaults.HorizontalImageAspectRatio),
@@ -75,7 +75,7 @@ fun CardItem(
                     Canvas(modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(CardDefaults.HorizontalImageAspectRatio)) {
-                        val text = item.channelName.toString()
+                        val text = channelName.toString()
                         val textLayoutResult = textMeasurer.measure(text = text, style = textStyle)
                         val x = (size.width - textLayoutResult.size.width) / 2
                         val y = (size.height - textLayoutResult.size.height) / 2
@@ -97,7 +97,7 @@ fun CardItem(
         },
         title = {
             Text(
-                text = item.channelName.toString(),
+                text = channelName.toString(),
                 modifier = Modifier.padding(top = 14.dp)
             )
         },

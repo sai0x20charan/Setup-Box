@@ -16,4 +16,8 @@ interface ChannelLocalRepository {
     suspend fun deleteByUUID(uuid : String)
 
     fun getUnSyncedDataCount() : Flow<Int>
+
+    fun getDistinctPackages() : List<String>
+
+    fun clearAllData()
 }

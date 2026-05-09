@@ -32,4 +32,13 @@ class ChannelLocalRepositoryImpl @Inject constructor(
     override fun getUnSyncedDataCount(): Flow<Int> {
         return channelDao.getUnSyncedDataCount()
     }
+
+    override fun getDistinctPackages(): List<String> {
+        return channelDao.getDistinctPackages()
+    }
+
+    override fun clearAllData() {
+        channelDao.clearAllData()
+
+    }
 }

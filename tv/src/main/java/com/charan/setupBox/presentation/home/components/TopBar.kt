@@ -1,3 +1,5 @@
+package com.charan.setupBox.presentation.home.components
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,17 +26,17 @@ import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
-import com.charan.setupBox.presentation.home.components.AvatarImageCard
 
 @Composable
-fun TopBar(
+fun HomeScreenTopBar(
     onRefresh: () -> Unit,
-    onOpen: ()->Unit
+    onModalSheetOpen: ()->Unit,
+    profilePicURL : String
+
+
 ) {
-    var showModalSheet by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Top Bar
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -44,19 +46,29 @@ fun TopBar(
             LazyRow {
                 item {
                     Card(
-                        onClick = {onRefresh()},
+                        onClick = { onRefresh() },
                         modifier = Modifier
                             .aspectRatio(CardDefaults.SquareImageAspectRatio)
                             .padding(10.dp)
                             .size(40.dp),
-                        border =CardDefaults.border(focusedBorder = Border(border = BorderStroke(width = 3.dp, color = MaterialTheme.colorScheme.onSurface))),
-                        shape =CardDefaults. shape(shape = CircleShape),
-                        //colors =CardDefaults.colors(containerColor = Color.Red, focusedContainerColor = Color. Yellow),
+                        border = CardDefaults.border(
+                            focusedBorder = Border(
+                                border = BorderStroke(
+                                    width = 3.dp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        ),
+                        shape = CardDefaults.shape(shape = CircleShape),
                         scale = CardDefaults.scale(focusedScale = 1.05f),
 
 
-                    ) {
-                        Column(modifier = Modifier.fillMaxSize(),horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
 
 
                             Icon(
@@ -65,20 +77,17 @@ fun TopBar(
                                 modifier = Modifier
                             )
                         }
-
-
                     }
-
                     AvatarImageCard(
-                        imageUrl = UserSessionManager.getProfilePic()
+                        imageUrl = profilePicURL
                     ) {
-                        onOpen()
+                        onModalSheetOpen()
                     }
                 }
             }
         }
-        }
-
     }
+
+}
 
 

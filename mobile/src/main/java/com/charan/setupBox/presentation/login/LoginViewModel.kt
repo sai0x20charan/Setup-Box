@@ -1,4 +1,5 @@
 package com.charan.setupBox.presentation.login
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.charan.shared.data.repository.SupabaseRepo
@@ -21,7 +22,7 @@ class LoginViewModel @Inject constructor(
     private val _state = MutableStateFlow(LoginState())
     val state = _state.asStateFlow()
 
-    private val _effect = MutableSharedFlow<LoginEffect?>()
+    private val _effect = MutableSharedFlow<LoginEffect>()
     val effect = _effect.asSharedFlow()
 
     fun onEvent(event : LoginEvent) {
@@ -37,7 +38,11 @@ class LoginViewModel @Inject constructor(
     private fun loginWithGoogle() = viewModelScope.launch{
         supabaseRepo.authenticateGoogleIdToken().collectLatest {
             when(it){
-                is ProcessState.Error -> {}
+                is ProcessState.Error -> {
+                    handleLoading(false)
+                    Log.e("LoginViewModel", "Error during Google authentication: ${it.exception}")
+                    sendEffect(LoginEffect.ShowError(it.exception))
+                }
                 is ProcessState.Loading -> {
                     handleLoading(true)
                 }
@@ -62,7 +67,7 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    private fun sendEffect(effect: LoginEffect?){
-        _effect.tryEmit(effect)
+    private fun sendEffect(effect: LoginEffect)= viewModelScope.launch{
+        _effect.emit(effect)
     }
 }

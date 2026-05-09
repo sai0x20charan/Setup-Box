@@ -1,72 +1,133 @@
-package com.charan.setupBox.presentation.ViewModel
-
+package com.charan.setupBox.presentation.home
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.charan.setupBox.data.local.entity.SetupBoxContent
-import com.charan.setupBox.data.repository.SupabaseRepo
-import com.charan.setupBox.repository.SetUpBoxContentRepository
-import com.charan.setupBox.utils.ProcessState
+import com.charan.setupBox.presentation.mapper.toChannelDataList
+import com.charan.shared.data.repository.ChannelLocalRepository
+import com.charan.shared.data.repository.SupabaseRepo
+import com.charan.shared.data.repository.SyncManager
+import com.charan.shared.utils.AppLauncher
+import com.charan.shared.utils.ProcessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val supabaseRepo: SupabaseRepo,
-    private val setUpBoxContentRepository: SetUpBoxContentRepository
+    private val syncManager: SyncManager,
+    private val channelLocalRepository: ChannelLocalRepository,
+    private val appLauncher: AppLauncher
 ) : ViewModel() {
+    private val _state = MutableStateFlow(HomeState())
+    val state = _state.asStateFlow()
 
-    data class UiState(
-        val allData: List<SetupBoxContent> = emptyList(),
-        val openModalSheet: Boolean = false,
-        val logoutState: ProcessState? = null
-    )
-
-    sealed interface Intent {
-        data object Refresh : Intent
-        data object ToggleModalSheet : Intent
-        data object Logout : Intent
-        data object ConsumeLogoutState : Intent
-    }
-
-    private val _uiState = MutableStateFlow(UiState())
-    val uiState = _uiState.asStateFlow()
+    private val _effect = MutableSharedFlow<HomeEffect?>()
+    val effect = _effect.asSharedFlow()
 
     init {
-        viewModelScope.launch {
-            setUpBoxContentRepository.getAllData().collectLatest {
-                _uiState.update { state -> state.copy(allData = it) }
+        observeData()
+        loadData()
+        initAccountData()
+    }
+
+    fun onEvent(event : HomeEvent){
+        when(event){
+            is HomeEvent.OnChannelClick -> {
+                handleChannelClick(event.link, event.appPackage)
+
+            }
+            HomeEvent.OnRefreshClick -> {
+                loadData()
+            }
+
+            HomeEvent.OnToggleModalSheet -> {
+                handleModalSheetToggle()
+
+            }
+
+            HomeEvent.OnLogoutClick -> {
+                handleLogout()
+
             }
         }
-        refresh()
     }
 
-    fun onIntent(intent: Intent) {
-        when (intent) {
-            Intent.Refresh -> refresh()
-            Intent.ToggleModalSheet -> _uiState.update { it.copy(openModalSheet = !it.openModalSheet) }
-            Intent.Logout -> logout()
-            Intent.ConsumeLogoutState -> _uiState.update { it.copy(logoutState = null) }
-        }
-    }
+    private fun handleLogout() = viewModelScope.launch(Dispatchers.IO) {
+        supabaseRepo.logout().collectLatest {
+            when(it){
+                is ProcessState.Error -> {}
+                is ProcessState.Loading -> {}
+                ProcessState.NotDetermined -> {}
+                is ProcessState.Success<*> -> {
+                    channelLocalRepository.clearAllData()
+                    handleEffects(HomeEffect.NavigateToLoginScreen)
 
-    private fun refresh() {
-        viewModelScope.launch(Dispatchers.IO) {
-            supabaseRepo.getDataFromSupabase()
-        }
-    }
-
-    private fun logout() {
-        _uiState.update { it.copy(logoutState = ProcessState.Loading) }
-        viewModelScope.launch(Dispatchers.IO) {
-            supabaseRepo.logout().collectLatest {
-                _uiState.update { state -> state.copy(logoutState = it) }
+                }
             }
         }
+    }
+
+    private fun handleChannelClick(link: String, packageName:String){
+        appLauncher.openLink(
+            appPackage = packageName,
+            link = link
+        )
+    }
+
+    private fun handleModalSheetToggle(){
+        _state.update {
+            it.copy(
+                showModelSheet = !it.showModelSheet
+            )
+        }
+    }
+
+    private fun observeData() = viewModelScope.launch(Dispatchers.IO) {
+        channelLocalRepository.getAllData().collectLatest {
+            val channels = it.toChannelDataList()
+            val categories = channels.groupBy { it.channelCategory }.map {
+                Log.d("TAG", "observeData: ${it.key}")
+                ChannelCategory(
+                    categoryName = it.key,
+                    channels = it.value
+                )
+            }
+            _state.update { it.copy(categories = categories) }
+        }
+
+    }
+
+    private fun loadData() = viewModelScope.launch{
+        syncManager.fetchAndUpdateData().collectLatest {
+            when(it){
+                is ProcessState.Error -> {}
+                is ProcessState.Loading -> {}
+                ProcessState.NotDetermined -> {}
+                is ProcessState.Success<*> -> {
+
+                }
+            }
+
+        }
+    }
+
+    private fun initAccountData() = viewModelScope.launch {
+        _state.update {
+            it.copy(
+                email = supabaseRepo.getEmail() ?: "",
+                profileURL = supabaseRepo.getProfileImageUrl() ?: ""
+            )
+        }
+    }
+
+    private fun handleEffects(effect: HomeEffect) = viewModelScope.launch {
+        _effect.emit(effect)
     }
 }

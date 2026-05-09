@@ -40,6 +40,7 @@ class AddChannelViewModel @Inject constructor(
         if(channelLink.isNotEmpty()){
             handleChannelLinkChange(channelLink)
         }
+        getPackageNames()
     }
 
     fun onEvent(event : AddChannelEvent) {
@@ -165,10 +166,38 @@ class AddChannelViewModel @Inject constructor(
 
     }
 
-     private fun saveChannel() =viewModelScope.launch(Dispatchers.IO){
-         val channelData = state.value.channelData.toChannelEntity(state.value.isEdit)
-            channelLocalRepository.upsert(channelData)
-         handleEffects(AddChannelEffect.NavigateBack)
+     private fun saveChannel() =viewModelScope.launch(Dispatchers.IO) {
+         if(isDataValid()) {
+             val channelData = state.value.channelData.toChannelEntity(state.value.isEdit)
+             channelLocalRepository.upsert(channelData)
+             handleEffects(AddChannelEffect.NavigateBack)
+         }
+     }
+
+    private fun isDataValid(): Boolean {
+        val channelData = state.value.channelData
+
+        if(channelData.channelName.isEmpty()){
+            handleEffects(AddChannelEffect.ShowToast("Channel name cannot be empty"))
+            return false
+        }
+
+        if(channelData.channelLink.isEmpty()){
+            handleEffects(AddChannelEffect.ShowToast("Channel link cannot be empty"))
+            return false
+        }
+
+        if(channelData.appPackage.isEmpty()){
+            handleEffects(AddChannelEffect.ShowToast("App package cannot be empty"))
+            return false
+        }
+
+        if(channelData.category.isEmpty()){
+            handleEffects(AddChannelEffect.ShowToast("Category cannot be empty"))
+            return false
+        }
+
+        return true
 
 
     }
@@ -180,6 +209,15 @@ class AddChannelViewModel @Inject constructor(
 
     private fun handleEffects(effect: AddChannelEffect) = viewModelScope.launch{
         _effect.emit(effect)
+    }
+
+    private fun getPackageNames() = viewModelScope.launch(Dispatchers.IO){
+        val packageNames = channelLocalRepository.getDistinctPackages()
+        _state.update {
+            it.copy(
+                distinctAppPackages = packageNames
+            )
+        }
     }
 
 }

@@ -26,9 +26,10 @@ import com.charan.setupBox.presentation.settings.components.SettingsItem
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = hiltViewModel(),
+    viewModel: SettingsViewModel ,
     navigateToAccountScreen : () -> Unit = {},
     navigateToAboutAppScreen : () -> Unit = {},
+    navigateBack : () -> Unit = {}
 ) {
 
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -42,6 +43,10 @@ fun SettingsScreen(
                 is SettingsEffect.NavigateToAboutAppScreen -> {
                     navigateToAboutAppScreen()
                 }
+
+                SettingsEffect.NavigateBack -> {
+                    navigateBack()
+                }
                 else -> {}
             }
         }
@@ -53,7 +58,9 @@ fun SettingsScreen(
                 title = { Text("Settings") },
                 scrollBehavior = scroll,
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = {
+                        viewModel.onEvent(SettingsEvent.OnBackClick)
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, "back")
 
                     }
@@ -69,17 +76,17 @@ fun SettingsScreen(
             .fillMaxSize()) {
             item {
                 SettingsItem(icon = Icons.Outlined.AccountCircle, title = "Account"){
+                    viewModel.onEvent(SettingsEvent.OnAccountClick)
 
 
                 }
                 HorizontalDivider()
                 SettingsItem(icon = Icons.Outlined.Info, title = "About App"){
-
+                    viewModel.onEvent(SettingsEvent.OnAboutAppClick)
 
                 }
             }
         }
 
     }
-    // UI logic here
 }

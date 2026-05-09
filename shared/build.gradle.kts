@@ -16,14 +16,15 @@ android {
 
     val google_signin = com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("GOOGLE_SERVER_CLIENT_ID")
 
+    val key_debug:String=com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("SUPABASE_ANON_KEY_DEBUG")
+
+    val url_debug:String=com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir,providers).getProperty("SUPABASE_URL_DEBUG")
+
     defaultConfig {
         minSdk = 23
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
-        buildConfigField("String","SUPABASE_ANON_KEY","\"$key\"")
-        buildConfigField("String", "SUPABASE_URL", "\"$url\"")
-        buildConfigField("String","GOOGLE_SERVER_CLIENT_ID","\"$google_signin\"")
     }
 
     buildTypes {
@@ -33,6 +34,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "SUPABASE_ANON_KEY", "\"$key\"")
+            buildConfigField("String", "SUPABASE_URL", "\"$url\"")
+            buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$google_signin\"")
+        }
+        debug {
+            buildConfigField("String", "SUPABASE_ANON_KEY", "\"$key_debug\"")
+            buildConfigField("String", "SUPABASE_URL", "\"$url_debug\"")
+            buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$google_signin\"")
         }
     }
     compileOptions {

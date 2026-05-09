@@ -1,4 +1,5 @@
 package com.charan.setupBox.presentation.login
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.charan.setupBox.R
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LoginScreen(
@@ -42,7 +44,8 @@ fun LoginScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
+        viewModel.effect.collectLatest { effect ->
+
             when (effect) {
                 is LoginEffect.ShowError -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_LONG).show()
@@ -57,7 +60,9 @@ fun LoginScreen(
     }
     Scaffold {
         Column(
-            modifier = Modifier.fillMaxSize().padding(it),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -76,7 +81,10 @@ fun LoginScreen(
 
             Button(
                 onClick = { viewModel.onEvent(LoginEvent.OnLoginWithGoogleClick) },
-                modifier = Modifier.animateContentSize().fillMaxWidth().padding(start = 20.dp, end = 20.dp),
+                modifier = Modifier
+                    .animateContentSize()
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp),
                 enabled = !state.isLoading
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -87,13 +95,17 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         "Continue with Google",
-                        modifier = Modifier.animateContentSize().then(
-                            if (state.isLoading) Modifier.padding(end = 10.dp) else Modifier
-                        )
+                        modifier = Modifier
+                            .animateContentSize()
+                            .then(
+                                if (state.isLoading) Modifier.padding(end = 10.dp) else Modifier
+                            )
                     )
                     AnimatedVisibility(visible = state.isLoading) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp).fillMaxWidth(),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .fillMaxWidth(),
                             strokeCap = StrokeCap.Round,
                             strokeWidth = 3.dp
                         )

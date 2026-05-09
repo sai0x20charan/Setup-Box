@@ -36,33 +36,46 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.charan.setupBox.presentation.navigation.HomeScreenNav
 import com.charan.setupBox.presentation.navigation.LoginScreenNav
 import com.charan.setupBox.presentation.settings.components.AvatarImage
+import com.charan.setupBox.presentation.settings.settings.SettingsEffect
 import com.charan.setupBox.presentation.settings.settings.SettingsEvent
+import com.charan.setupBox.presentation.settings.settings.SettingsViewModel
 import com.charan.setupBox.utils.ProcessState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
-
-    viewModel: com.charan.setupBox.presentation.settings.settings.SettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    navigateToBack : () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is SettingsEffect.NavigateBack -> {
+                    navigateToBack()
+                }
+                else -> {}
+            }
+        }
 
 
+    }
     Scaffold(
         topBar = {
             LargeTopAppBar(
                 title = { Text("Account") },
                 scrollBehavior = scroll,
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = {
+                        viewModel.onEvent(SettingsEvent.OnBackClick)
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, "back")
                     }
                 }
@@ -76,10 +89,10 @@ fun AccountScreen(
                 .nestedScroll(scroll.nestedScrollConnection)
         ) {
             item {
-//                ListItem(
-//                    leadingContent = { AvatarImage(imageUrl = UserSessionManager.getProfilePic()) },
-//                    headlineContent = { Text(text = UserSessionManager.getEmail() ?: "null") }
-//                )
+                ListItem(
+                    leadingContent = { AvatarImage(imageUrl = state.profilePic) },
+                    headlineContent = { Text(text = state.userName) }
+                )
                 ListItem(
                     headlineContent = { Text(text = "Logout") },
                     modifier = Modifier.padding(start = 20.dp).clickable {

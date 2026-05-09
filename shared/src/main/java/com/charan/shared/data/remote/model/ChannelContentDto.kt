@@ -8,7 +8,7 @@ data class ChannelContentDto(
     val channelLink:String?=null,
     val channelName:String?=null,
     val channelPhoto:String?=null,
-    val Category:String?=null,
+    val category:String?=null,
     val app_Package:String?=null,
     val uuid : String? = null,
     val email : String? = null

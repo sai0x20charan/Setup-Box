@@ -10,6 +10,7 @@ import com.charan.shared.utils.ProcessState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -22,7 +23,7 @@ class SyncManagerRepositoryImpl(
         try {
             channelLocalRepository.getUnSyncedData().collectLatest { list->
                 supabaseRepo.insertChannelData(
-                    list.toChannelContentDtoList()
+                    list.toChannelContentDtoList(supabaseRepo.getEmail() ?: "")
                 ).collectLatest {
                     when(it){
                         is ProcessState.Success -> {
@@ -62,5 +63,30 @@ class SyncManagerRepositoryImpl(
         }
     }
 
+    override suspend fun fetchAndUpdateData(): Flow<ProcessState<Boolean>> = channelFlow{
+        send(ProcessState.Loading())
+        try {
+            supabaseRepo.getData().collectLatest {
+                when(it){
+                    is ProcessState.Success -> {
+                        val channelList = it.data.map { data->
+                            data.toChannelEntity().copy(isSynced = true)
+                        }
+                        channelList.forEach { channel->
+                            channelLocalRepository.upsert(channel)
+                        }
+                        send(ProcessState.Success(true))
+                    }
+                    is ProcessState.Error -> {
+                        send(ProcessState.Error(it.exception))
+                    }
+                    else -> {}
+                }
+            }
 
+        } catch (e: Exception) {
+            send(ProcessState.Error(e.message.toString()))
+        }
+
+    }
 }

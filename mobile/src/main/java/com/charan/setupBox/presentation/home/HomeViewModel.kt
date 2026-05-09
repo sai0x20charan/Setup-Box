@@ -3,6 +3,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.charan.setupBox.presentation.common.mappers.toChannelDataList
 import com.charan.shared.data.repository.ChannelLocalRepository
+import com.charan.shared.data.repository.SyncManager
+import com.charan.shared.utils.ProcessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val channelLocalRepository: ChannelLocalRepository
+    private val channelLocalRepository: ChannelLocalRepository,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     private val _homeState = MutableStateFlow(HomeState())
@@ -26,6 +29,7 @@ class HomeViewModel @Inject constructor(
     val homeEffect = _homeEffects.asSharedFlow()
 
     init {
+        fetchDataFromRemote()
         loadData()
     }
 
@@ -39,13 +43,31 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun fetchDataFromRemote() = viewModelScope.launch(Dispatchers.IO) {
+        syncManager.fetchAndUpdateData().collectLatest {
+            when(it){
+                is ProcessState.Error -> {
+                    handleEffects(HomeEffect.ShowError(it.exception))
+                }
+                is ProcessState.Loading -> {
+                        handleLoading(true)
+
+                }
+                ProcessState.NotDetermined -> {}
+                is ProcessState.Success<*> -> {
+                    handleLoading(false)
+                }
+            }
+        }
+    }
+
     fun onEvent(event : HomeEvent){
         when(event){
             is HomeEvent.OnChannelClick -> {
                 handleEffects(HomeEffect.NavigateToAddChannelScreen(event.id))
             }
             HomeEvent.OnRefresh -> {
-                loadData()
+                fetchDataFromRemote()
             }
             HomeEvent.OnSettingsClick -> {
                 handleEffects(HomeEffect.NavigateToSettingsScreen)
@@ -61,6 +83,14 @@ class HomeViewModel @Inject constructor(
         _homeState.update {
             it.copy(
                 showDropDown = !it.showDropDown
+            )
+        }
+    }
+
+    private fun handleLoading(isLoading: Boolean){
+        _homeState.update { currentState->
+            currentState.copy(
+                loading = isLoading
             )
         }
     }

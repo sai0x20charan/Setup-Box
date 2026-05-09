@@ -11,18 +11,14 @@ import com.charan.shared.data.remote.model.TVAuthenticationDTO
 import com.charan.shared.data.repository.SupabaseRepo
 import com.charan.shared.utils.AppConstants
 import com.charan.shared.utils.AppConstants.SETUPBOXCONTENT
-import com.charan.shared.utils.AppUtils
-import com.charan.shared.utils.LoginState
 import com.charan.shared.utils.ProcessState
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.builtin.OTP
-import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
@@ -33,10 +29,9 @@ import io.github.jan.supabase.realtime.realtime
 import io.ktor.client.call.body
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
@@ -56,7 +51,8 @@ class SupabaseRepoImpl(
                     values = channelContentDto
 
                 ) {
-                    onConflict = "uuid"
+                    onConflict = "id"
+                    select()
                 }.decodeList<ChannelContentDto>()
                 emit(ProcessState.Success(data))
             } catch (e: Exception) {
@@ -66,9 +62,15 @@ class SupabaseRepoImpl(
 
         }
 
-    override suspend fun getData(): Flow<ProcessState<ChannelContentDto>> =flow{
+    override suspend fun getData(): Flow<ProcessState<List<ChannelContentDto>>> =flow{
         emit(ProcessState.Loading())
         try {
+            val data = client.from(SETUPBOXCONTENT).select().decodeList<ChannelContentDto>()
+            if(data.isNotEmpty()){
+                emit(ProcessState.Success(data))
+            } else {
+                emit(ProcessState.Error("No data found"))
+            }
         } catch (e: Exception) {
             Log.d("SupabaseRepoImpl", "Error fetching channel data: ${e.message}")
             emit(ProcessState.Error(e.message.toString()))
@@ -123,10 +125,11 @@ class SupabaseRepoImpl(
 
     override suspend fun attachEmailIdToCode(code: String): Flow<ProcessState<Boolean>> =flow{
         emit(ProcessState.Loading())
+        val email = getEmail()
         try {
             client.from("TVAuthentication").update(
                 {
-                    set("email", "")
+                    set("email", email)
                 }
             )
                 {
@@ -158,29 +161,30 @@ class SupabaseRepoImpl(
 
     }
 
-    override suspend fun observeCodeAuthenticationStatus(code: String): Flow<ProcessState<Boolean>> =flow{
-        val channel = supabaseClient.client.channel(AppConstants.TVAuthenticationChannelId) {
-        }
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = AppConstants.TVAUTHENTICATION
-            filter("tv_code", FilterOperator.EQ, code)
-            filter("isAuthenticated",FilterOperator.EQ,false)
-        }
-        changeFlow.onEach {
-            when(it){
-                is PostgresAction.Update -> {
-                    val data = Json.decodeFromString<TVAuthenticationDTO>(it.record.toString())
-                    if(data.isAuthenticated == true){
-                        emit(ProcessState.Success(true))
-                        channel.unsubscribe()
-                    }
-
-                }
-                else -> Unit
+    override suspend fun observeCodeAuthenticationStatus(code: String): Flow<ProcessState<String>> =
+        channelFlow{
+            val channel = supabaseClient.client.channel(AppConstants.TVAuthenticationChannelId) {
             }
-        }.launchIn(CoroutineScope(coroutineContext))
-        channel.subscribe()
-    }
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = AppConstants.TVAUTHENTICATION
+                filter("tv_code", FilterOperator.EQ, code)
+                filter("isAuthenticated",FilterOperator.EQ,false)
+            }
+            changeFlow.onEach {
+                when(it){
+                    is PostgresAction.Update -> {
+                        val data = Json.decodeFromString<TVAuthenticationDTO>(it.record.toString())
+                       if(!(data.email.isNullOrEmpty())){
+                              send(ProcessState.Success(data.email))
+                           channel.unsubscribe()
+                       }
+
+                    }
+                    else -> Unit
+                }
+            }.launchIn(CoroutineScope(coroutineContext))
+            channel.subscribe()
+        }
 
     override suspend fun authenticationBySessionId(code: String) {
         TODO("Not yet implemented")
@@ -192,6 +196,7 @@ class SupabaseRepoImpl(
             supabaseClient.client.auth.signInWith(OTP){
                 email = mailId
             }
+            Log.d("TAG", "sentOTPLogin: OTP sent successfully to $mailId")
             emit(ProcessState.Success("OTP sent successfully to $mailId"))
 
 
@@ -203,12 +208,12 @@ class SupabaseRepoImpl(
     }
 
     override suspend fun verifyOTP(
-        mainId: String,
+        mailId: String,
         otp: String
     ): Flow<ProcessState<Boolean>> =flow{
         emit(ProcessState.Loading())
         try {
-            supabaseClient.client.auth.verifyEmailOtp(type = OtpType.Email.EMAIL,email = mainId, token = otp)
+            supabaseClient.client.auth.verifyEmailOtp(type = OtpType.Email.EMAIL,email = mailId, token = otp)
             emit(ProcessState.Success(true))
             supabaseClient.client.realtime.removeAllChannels()
 
@@ -258,5 +263,13 @@ class SupabaseRepoImpl(
 
     override suspend fun loadSession(): Boolean {
         return supabaseClient.client.auth.loadFromStorage()
+    }
+
+    override suspend fun getEmail(): String? {
+        return client.auth.currentUserOrNull()?.email
+    }
+
+    override suspend fun getProfileImageUrl(): String? {
+        return client.auth.currentUserOrNull()?.identities?.get(0)?.identityData?.get("avatar_url").toString().substringAfter("\"").substringBefore("\"")
     }
 }

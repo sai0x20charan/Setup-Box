@@ -10,6 +10,8 @@ fun ChannelContentDto.toChannelEntity() : ChannelEntity {
         channelName = this.channelName ?: "",
         channelPhoto = this.channelPhoto ?: "",
         channelLink = this.channelLink ?: "",
+        category = this.category ?: "",
+        appPackage = this.app_Package ?: "",
         isSynced = true
     )
 }
@@ -18,16 +20,17 @@ fun List<ChannelContentDto>.toChannelEntityList() : List<ChannelEntity> {
     return this.map { it.toChannelEntity() }
 }
 
-fun ChannelEntity.toChannelContentDto() : ChannelContentDto {
+fun ChannelEntity.toChannelContentDto(email : String) : ChannelContentDto {
     return ChannelContentDto(
         id = this.id,
         uuid = this.uuid,
         channelName = this.channelName,
         channelPhoto = this.channelPhoto,
-        channelLink = this.channelLink
+        channelLink = this.channelLink,
+        email = email
     )
 }
 
-fun List<ChannelEntity>.toChannelContentDtoList() : List<ChannelContentDto> {
-    return this.map { it.toChannelContentDto() }
+fun List<ChannelEntity>.toChannelContentDtoList(email : String) : List<ChannelContentDto> {
+    return this.map { it.toChannelContentDto(email) }
 }

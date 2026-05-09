@@ -4,9 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 object HomeScreenNav
+
 @Serializable
 object LoginScreenNav
+
 @Serializable
-data class OTPScreenNav(val email : String?,val generatedCode : String?)
+data class OTPScreenNav(val email: String)
+
 @Serializable
 object SettingsScreenNav

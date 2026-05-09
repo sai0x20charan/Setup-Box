@@ -6,6 +6,8 @@ sealed class SettingsEvent {
     object OnAboutAppClick : SettingsEvent()
     object OnToggleAuthenticationSheet : SettingsEvent()
 
+    object OnBackClick : SettingsEvent()
+
     data class OnAuthenticateCodeChange(val code : String) : SettingsEvent()
 
     data object OnAuthenticateClick : SettingsEvent()

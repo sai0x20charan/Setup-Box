@@ -11,6 +11,7 @@ import com.charan.shared.data.repository.SyncManager
 import com.charan.shared.data.repository.impl.ChannelLocalRepositoryImpl
 import com.charan.shared.data.repository.impl.SupabaseRepoImpl
 import com.charan.shared.data.repository.impl.SyncManagerRepositoryImpl
+import com.charan.shared.utils.AppLauncher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -59,5 +60,9 @@ class AppModule {
         supabaseRepo: SupabaseRepo,
         channelLocalRepository: ChannelLocalRepository
     ) : SyncManager = SyncManagerRepositoryImpl(channelLocalRepository, supabaseRepo)
+
+    @Provides
+    @Singleton
+    fun provideAppLauncher(@ApplicationContext context : Context) : AppLauncher = AppLauncher(context)
 
 }

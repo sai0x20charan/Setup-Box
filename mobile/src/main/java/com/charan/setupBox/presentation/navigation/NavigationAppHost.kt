@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.internal.composableLambda
+import androidx.compose.runtime.remember
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -82,7 +84,11 @@ fun NavigationAppHost(
         }
         composable<AddNewChannelScreenNav>(
         ) {
-            AddChannelScreen()
+            AddChannelScreen(
+                navigateBack = {
+                    navHostController.popBackStack()
+                }
+            )
         }
         composable<LoginScreenNav> {
             LoginScreen(
@@ -92,14 +98,37 @@ fun NavigationAppHost(
 
             )
         }
-        composable<AccountScreenNav>(){
-            AccountScreen()
-        }
-        composable<AboutAppNav> { 
-            AboutAppScreen(navHostController = navHostController)
-        }
+
         composable<SettingsScreenNav> {
-            SettingsScreen()
+            SettingsScreen(
+                navigateToAccountScreen = {
+                    navHostController.navigate(AccountScreenNav)
+                },
+                navigateToAboutAppScreen = {
+                    navHostController.navigate(AboutAppNav)
+                },
+                navigateBack = {
+                    navHostController.popBackStack()
+                },
+                viewModel = hiltViewModel(it)
+            )
+        }
+        composable<AccountScreenNav>(){
+            val settingsEntry = remember(it) {
+                navHostController.getBackStackEntry(SettingsScreenNav)
+            }
+
+            AccountScreen(
+                viewModel = hiltViewModel(settingsEntry),
+                navigateToBack = {
+                    navHostController.popBackStack()
+                }
+
+            )
+        }
+        composable<AboutAppNav> {
+
+            AboutAppScreen(navHostController = navHostController)
         }
         composable<LicenseScreenNav> {
             LicenseScreen(navHostController = navHostController)
