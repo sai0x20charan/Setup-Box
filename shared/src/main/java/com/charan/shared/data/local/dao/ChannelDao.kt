@@ -32,7 +32,7 @@ interface ChannelDao {
     @Query("UPDATE channels SET isSynced = 1 WHERE uuid = :uuid")
     suspend fun markAsSynced(uuid: String)
 
-    @Query("UPDATE channels SET isDeleted = 0 and isSynced = 0 WHERE uuid = :uuid")
+    @Query("UPDATE channels SET isDeleted = 1 and isSynced = 0 WHERE uuid = :uuid")
     suspend fun markAsDeleted(uuid: String)
 
     @Query("SELECT COUNT(*) FROM channels WHERE isSynced = 0")
