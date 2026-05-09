@@ -138,6 +138,7 @@ class SupabaseRepoImpl(
                         eq("isAuthenticated",false)
                     }
                 }
+            emit(ProcessState.Success(true))
 
 
         } catch (e: Exception) {
