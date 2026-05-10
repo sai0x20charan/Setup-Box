@@ -53,6 +53,7 @@ androidx-material3-android = { module = "androidx.compose.material3:material3-an
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 postgrest-kt = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt" }
+compose-auth-ui = { module = "io.github.jan-tennert.supabase:compose-auth-ui" }
 functions-kt = {module = "io.github.jan-tennert.supabase:functions-kt"}
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "bom" }
 compose-material = { module = "androidx.compose.material:material", version.ref = "composeMaterial" }

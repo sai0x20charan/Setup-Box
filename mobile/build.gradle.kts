@@ -92,9 +92,7 @@ dependencies {
 
     // Supabase
     implementation(platform(libs.supabase.bom))
-    implementation(libs.postgrest.kt)
-    implementation(libs.auth.kt)
-    implementation(libs.realtime.kt)
+    implementation(libs.compose.auth.ui)
 
     // Networking (Ktor)
     implementation(libs.ktor.client.core)

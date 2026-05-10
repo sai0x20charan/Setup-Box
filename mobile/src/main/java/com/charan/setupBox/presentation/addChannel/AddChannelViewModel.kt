@@ -1,5 +1,4 @@
 package com.charan.setupBox.presentation.addChannel
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -82,7 +81,7 @@ class AddChannelViewModel @Inject constructor(
             }
 
                 AddChannelEvent.OnNavigateBack -> {
-                    handleEffects(AddChannelEffect.NavigateBack)
+                    sendEffect(AddChannelEffect.NavigateBack)
                 }
 
         }
@@ -182,7 +181,7 @@ class AddChannelViewModel @Inject constructor(
          if(isDataValid()) {
              val channelData = state.value.channelData.toChannelEntity(state.value.isEdit)
              channelLocalRepository.upsert(channelData)
-             handleEffects(AddChannelEffect.NavigateBack)
+             sendEffect(AddChannelEffect.NavigateBack)
          }
      }
 
@@ -190,22 +189,22 @@ class AddChannelViewModel @Inject constructor(
         val channelData = state.value.channelData
 
         if(channelData.channelName.isEmpty()){
-            handleEffects(AddChannelEffect.ShowToast("Channel name cannot be empty"))
+            sendEffect(AddChannelEffect.ShowToast("Channel name cannot be empty"))
             return false
         }
 
         if(channelData.channelLink.isEmpty()){
-            handleEffects(AddChannelEffect.ShowToast("Channel link cannot be empty"))
+            sendEffect(AddChannelEffect.ShowToast("Channel link cannot be empty"))
             return false
         }
 
         if(channelData.appPackage.isEmpty()){
-            handleEffects(AddChannelEffect.ShowToast("App package cannot be empty"))
+            sendEffect(AddChannelEffect.ShowToast("App package cannot be empty"))
             return false
         }
 
         if(channelData.category.isEmpty()){
-            handleEffects(AddChannelEffect.ShowToast("Category cannot be empty"))
+            sendEffect(AddChannelEffect.ShowToast("Category cannot be empty"))
             return false
         }
 
@@ -216,10 +215,10 @@ class AddChannelViewModel @Inject constructor(
 
      private fun deleteChannel(uuid: String) = viewModelScope.launch(Dispatchers.IO) {
          channelLocalRepository.deleteByUUID(uuid)
-         handleEffects(AddChannelEffect.NavigateBack)
+         sendEffect(AddChannelEffect.NavigateBack)
      }
 
-    private fun handleEffects(effect: AddChannelEffect) = viewModelScope.launch{
+    private fun sendEffect(effect: AddChannelEffect) = viewModelScope.launch{
         _effect.emit(effect)
     }
 

@@ -49,7 +49,7 @@ class HomeViewModel @Inject constructor(
             when (it) {
                 is ProcessState.Error -> {
                     handleLoading(false)
-                    handleEffects(HomeEffect.ShowError(it.exception))
+                    sendEffect(HomeEffect.ShowError(it.exception))
                 }
 
                 is ProcessState.Loading -> {
@@ -86,13 +86,13 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event : HomeEvent){
         when(event){
             is HomeEvent.OnChannelClick -> {
-                handleEffects(HomeEffect.NavigateToAddChannelScreen(event.id))
+                sendEffect(HomeEffect.NavigateToAddChannelScreen(event.id))
             }
             HomeEvent.OnRefresh -> {
                 fetchRemoteChannelData()
             }
             HomeEvent.OnSettingsClick -> {
-                handleEffects(HomeEffect.NavigateToSettingsScreen)
+                sendEffect(HomeEffect.NavigateToSettingsScreen)
             }
             HomeEvent.ToggleShowDropDown -> {
                 handleShowDropDown()
@@ -122,7 +122,7 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    private fun handleEffects(effect: HomeEffect) = viewModelScope.launch{
+    private fun sendEffect(effect: HomeEffect) = viewModelScope.launch{
         _homeEffects.emit(effect)
 
 
