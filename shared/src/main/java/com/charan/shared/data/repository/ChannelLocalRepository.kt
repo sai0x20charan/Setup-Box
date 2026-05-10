@@ -9,7 +9,7 @@ interface ChannelLocalRepository {
     suspend fun deleteByUuid(uuid: String)
     fun getAllActiveData(): Flow<List<ChannelEntity>>
 
-    suspend fun getById(id : Long) : ChannelEntity
+    suspend fun getById(id : String) : ChannelEntity
 
     fun getUnSyncedData() : Flow<List<ChannelEntity>>
 

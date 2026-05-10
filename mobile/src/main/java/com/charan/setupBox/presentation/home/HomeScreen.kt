@@ -59,7 +59,7 @@ import com.charan.setupBox.presentation.home.components.SyncStatusIndicators
 fun HomeScreen(
     homeViewModel : HomeViewModel = hiltViewModel(),
     navigateToSettings : () -> Unit = {},
-    navigateToAddChannel : (id : Long?, channelLink : String?) -> Unit
+    navigateToAddChannel : (id : String?, channelLink : String?) -> Unit
 
 ) {
 

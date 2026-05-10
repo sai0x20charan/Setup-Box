@@ -47,22 +47,19 @@ fun CustomDropDown(
 
                         Text(text = item.text)
                     },
-                    leadingIcon = {
-                        if (item.icon != null) {
-
+                    leadingIcon = item.icon?.let { icon ->
+                        {
                             Icon(
-                                imageVector = item.icon,
+                                imageVector = icon,
                                 contentDescription = item.text
                             )
-
-
                         }
                     },
                     shapes = itemShape,
                     onCheckedChange = {
                         item.onClick()
                     },
-                    checked = false,
+                    checked = item.isSelected,
                     colors = MenuDefaults.selectableItemColors().copy(
                         containerColor = containerColor
                     )

@@ -9,7 +9,7 @@ data class HomeScreenNav(
 
 @Serializable
 data class AddNewChannelScreenNav(
-    val id : Long? = null,
+    val id : String? = null,
     val channelLink : String? = null
 )
 

@@ -1,7 +1,9 @@
 package com.charan.setupBox.presentation.addChannel
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.charan.setupBox.presentation.common.mappers.toChannelData
 import com.charan.setupBox.presentation.common.mappers.toChannelEntity
 import com.charan.setupBox.presentation.navigation.AddNewChannelScreenNav
@@ -29,16 +31,15 @@ class AddChannelViewModel @Inject constructor(
     private val _effect = MutableSharedFlow<AddChannelEffect?>()
     val effect = _effect.asSharedFlow()
 
-    val channelLink: String = checkNotNull(savedStateHandle[AddNewChannelScreenNav::channelLink.name])
-    val id: Long? = savedStateHandle[AddNewChannelScreenNav::id.name]
+    val args = savedStateHandle.toRoute<AddNewChannelScreenNav>()
 
     init {
-        if(id !=null){
+        if(args.id !=null){
             fetchChannelData()
         }
 
-        if(channelLink.isNotEmpty()){
-            handleChannelLinkChange(channelLink)
+        if(!(args.channelLink.isNullOrEmpty())){
+            handleChannelLinkChange(args.channelLink)
         }
         getPackageNames()
     }
@@ -60,7 +61,7 @@ class AddChannelViewModel @Inject constructor(
                 handleChannelPhotoChange(event.photo)
             }
             is AddChannelEvent.OnDelete -> {
-                deleteChannel(state.value.channelData.uuid)
+                deleteChannel(state.value.channelData.id)
             }
             is AddChannelEvent.OnPackageChange -> {
                 handlePackageNameChange(event.packageName)
@@ -75,6 +76,9 @@ class AddChannelViewModel @Inject constructor(
             AddChannelEvent.OnToggleCategoryDropDown -> {
                 handleCategoryDropDown()
 
+            }
+            AddChannelEvent.OnToggleDeleteConfirmation -> {
+                handleDeletePopup()
             }
 
                 AddChannelEvent.OnNavigateBack -> {
@@ -93,7 +97,7 @@ class AddChannelViewModel @Inject constructor(
     }
 
     private fun fetchChannelData() = viewModelScope.launch(Dispatchers.IO){
-        channelLocalRepository.getById(id!!).toChannelData()?.let { data->
+        channelLocalRepository.getById(args.id!!).toChannelData()?.let { data->
             _state.update {
                 it.copy(
                     channelData = data,
@@ -164,6 +168,14 @@ class AddChannelViewModel @Inject constructor(
         }
 
 
+    }
+
+    private fun handleDeletePopup() {
+        _state.update {
+            it.copy(
+                showDeleteConfirmation = !it.showDeleteConfirmation
+            )
+        }
     }
 
      private fun saveChannel() =viewModelScope.launch(Dispatchers.IO) {

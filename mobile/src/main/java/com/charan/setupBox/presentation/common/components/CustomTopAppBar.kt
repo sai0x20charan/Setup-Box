@@ -1,5 +1,6 @@
 package com.charan.setupBox.presentation.common.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.DropdownMenu
@@ -16,6 +17,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -102,7 +104,8 @@ private fun BackButton(
     FilledTonalIconButton(
         onClick = onClick,
         shapes = IconButtonDefaults.shapes(),
-        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        modifier = Modifier.size(IconButtonDefaults.smallContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide))
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

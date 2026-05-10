@@ -1,6 +1,7 @@
 package com.charan.shared.data.repository.impl
 
-import com.charan.shared.data.mappers.toChannelContentDtoList
+import android.util.Log
+import com.charan.shared.data.mappers.toChannelDtoList
 import com.charan.shared.data.mappers.toChannelEntity
 import com.charan.shared.data.repository.ChannelLocalRepository
 import com.charan.shared.data.repository.SupabaseRepo
@@ -14,7 +15,6 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -41,7 +41,7 @@ class SyncManagerRepositoryImpl(
                 }
                 syncStatus.value = SyncStatus(isSyncing = true)
                 supabaseRepo.insertChannelData(unSyncedList
-                    .toChannelContentDtoList(supabaseRepo.getEmail() ?: "")
+                    .toChannelDtoList(supabaseRepo.getEmail() ?: "")
                 ).collectLatest { result ->
                     when (result) {
                         is ProcessState.Success -> {
@@ -103,6 +103,7 @@ class SyncManagerRepositoryImpl(
                 }
 
             } catch (e: Exception) {
+                Log.d("TAG", "fetchAndUpdateData: ${e.message}")
                 send(ProcessState.Error(e.message.toString()))
             }
         }

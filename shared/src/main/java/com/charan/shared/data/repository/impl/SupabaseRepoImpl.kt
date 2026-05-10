@@ -6,11 +6,10 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.charan.shared.BuildConfig
 import com.charan.shared.data.remote.SupabaseClient
-import com.charan.shared.data.remote.model.ChannelContentDto
+import com.charan.shared.data.remote.model.ChannelDTO
 import com.charan.shared.data.remote.model.TVAuthenticationDTO
 import com.charan.shared.data.repository.SupabaseRepo
 import com.charan.shared.utils.AppConstants
-import com.charan.shared.utils.AppConstants.SETUPBOXCONTENT
 import com.charan.shared.utils.ProcessState
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -42,18 +41,20 @@ class SupabaseRepoImpl(
     private val supabaseClient: SupabaseClient,
     private val context : Context
 ) : SupabaseRepo {
+
+    companion object {
+        private const val TABLE_CHANNELS = "channels"
+    }
     private val client = supabaseClient.client
-    override suspend fun insertChannelData(channelContentDto: List<ChannelContentDto>): Flow<ProcessState<List<ChannelContentDto>>> =
+    override suspend fun insertChannelData(channelContentDto: List<ChannelDTO>): Flow<ProcessState<List<ChannelDTO>>> =
         flow{
             emit(ProcessState.Loading())
             try {
-                val data = client.from(SETUPBOXCONTENT).upsert(
+                val data = client.from(TABLE_CHANNELS).upsert(
                     values = channelContentDto
-
                 ) {
-                    onConflict = "id"
                     select()
-                }.decodeList<ChannelContentDto>()
+                }.decodeList<ChannelDTO>()
                 emit(ProcessState.Success(data))
             } catch (e: Exception) {
                 Log.d("SupabaseRepoImpl", "Error inserting channel data: ${e.message}")
@@ -62,10 +63,10 @@ class SupabaseRepoImpl(
 
         }
 
-    override suspend fun getData(): Flow<ProcessState<List<ChannelContentDto>>> =flow{
+    override suspend fun getData(): Flow<ProcessState<List<ChannelDTO>>> =flow{
         emit(ProcessState.Loading())
         try {
-            val data = client.from(SETUPBOXCONTENT).select().decodeList<ChannelContentDto>()
+            val data = client.from(TABLE_CHANNELS).select().decodeList<ChannelDTO>()
             if(data.isNotEmpty()){
                 emit(ProcessState.Success(data))
             } else {
