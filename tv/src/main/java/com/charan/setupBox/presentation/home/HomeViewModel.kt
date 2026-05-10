@@ -119,10 +119,12 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun initAccountData() = viewModelScope.launch {
+        val accountInfo = supabaseRepo.getAccountInfo()
         _state.update {
             it.copy(
-                email = supabaseRepo.getEmail() ?: "",
-                profileURL = supabaseRepo.getProfileImageUrl() ?: ""
+                email = accountInfo.email,
+                profileURL = accountInfo.profilePicUrl,
+                userName = accountInfo.userName
             )
         }
     }

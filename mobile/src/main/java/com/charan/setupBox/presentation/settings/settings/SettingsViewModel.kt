@@ -1,9 +1,10 @@
 package com.charan.setupBox.presentation.settings.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.charan.shared.data.model.AppInfo
 import com.charan.shared.data.repository.ChannelLocalRepository
 import com.charan.shared.data.repository.SupabaseRepo
+import com.charan.shared.utils.AppConstants.GITHUB_URL
 import com.charan.shared.utils.ProcessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -18,10 +19,17 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val supabaseRepo: SupabaseRepo,
-    private val channelLocalRepository: ChannelLocalRepository
+    private val channelLocalRepository: ChannelLocalRepository,
+    private val appInfo : AppInfo
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(SettingsState())
+    private val _state = MutableStateFlow(SettingsState(
+        appInfo = AppDisplayInfo(
+            versionName = appInfo.versionName,
+            versionCode = appInfo.versionCode,
+            isDebug = appInfo.isDebug
+        )
+    ))
     val state = _state.asStateFlow()
 
     private val _effect = MutableSharedFlow<SettingsEffect?>()
@@ -29,7 +37,6 @@ class SettingsViewModel @Inject constructor(
 
     init {
         accountDetails()
-        println("SettingsViewModel initialized}")
     }
 
     fun onEvent(event: SettingsEvent) {
@@ -59,6 +66,21 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.OnToggleAuthenticationSheet -> {
                 handleAuthenticationSheetToggle()
             }
+
+            SettingsEvent.OnNavigateBack -> {
+                sendEffect(SettingsEffect.NavigateBack)
+            }
+
+            SettingsEvent.OnOpenGitHubClick -> {
+                sendEffect(SettingsEffect.OpenLink(GITHUB_URL))
+            }
+            SettingsEvent.OnOpenSourceLicensesClick -> {
+                sendEffect(SettingsEffect.NavigateToAboutAppScreen)
+            }
+
+            SettingsEvent.OnToggleLogoutDialog -> {
+                handleLogoutDialogToggle()
+            }
         }
     }
 
@@ -83,19 +105,31 @@ class SettingsViewModel @Inject constructor(
         supabaseRepo.attachEmailIdToCode(state.value.code).collectLatest {
             when(it){
                 is ProcessState.Error -> {
+                    handleAuthenticationLoading(false)
+                    sendEffect(SettingsEffect.ShowMessage(it.exception))
 
                 }
-                is ProcessState.Loading -> {}
+                is ProcessState.Loading -> {
+                    handleAuthenticationLoading(true)
+                }
                 ProcessState.NotDetermined -> {}
                 is ProcessState.Success<*> -> {
                     sendEffect(SettingsEffect.ShowMessage("TV Authenticated Successfully"))
                     handleAuthenticationSheetToggle()
                     handleAuthenticateCodeChange("")
+                    handleAuthenticationLoading(false)
                 }
             }
 
         }
 
+    }
+    private fun handleAuthenticationLoading(isLoading: Boolean){
+        _state.update { currentState->
+            currentState.copy(
+                isAuthenticating = isLoading
+            )
+        }
     }
 
     private fun handleLogout() = viewModelScope.launch(Dispatchers.IO){
@@ -122,10 +156,22 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun accountDetails() = viewModelScope.launch {
-        _state.update {
-            it.copy(
-                profilePic = supabaseRepo.getProfileImageUrl() ?: "",
-                email = supabaseRepo.getEmail() ?: "",
+        val accountInfo = supabaseRepo.getAccountInfo()
+        _state.update {currentState->
+            currentState.copy(
+                userInfo = UserInfo(
+                    profilePic = accountInfo.profilePicUrl,
+                    userName = accountInfo.userName,
+                    email = accountInfo.email
+                ),
+            )
+        }
+    }
+
+    private fun handleLogoutDialogToggle() = viewModelScope.launch {
+        _state.update { currentState->
+            currentState.copy(
+                showLogoutDialog = !currentState.showLogoutDialog
             )
         }
     }

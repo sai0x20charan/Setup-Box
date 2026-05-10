@@ -9,6 +9,8 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.charan.setupBox.ui.theme.IndexItem
+import com.charan.setupBox.ui.theme.customListItemShapes
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -17,8 +19,7 @@ fun CustomSegmentedLists(
     supportingContent : @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     leadingContent : @Composable (() -> Unit)? = null,
-    index : Int,
-    count : Int,
+    index : IndexItem,
     onClick : () -> Unit = { }
 ) {
     SegmentedListItem(
@@ -28,7 +29,7 @@ fun CustomSegmentedLists(
         trailingContent = trailingContent,
         leadingContent = leadingContent,
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
+        shapes = customListItemShapes(index),
         modifier = Modifier.padding(1.dp),
         contentPadding = PaddingValues(16.dp)
     )

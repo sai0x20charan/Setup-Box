@@ -5,8 +5,10 @@ import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.charan.shared.BuildConfig
+import com.charan.shared.data.model.AccountInfo
 import com.charan.shared.data.remote.SupabaseClient
 import com.charan.shared.data.remote.model.ChannelDTO
+import com.charan.shared.data.remote.model.UserMetaData
 import com.charan.shared.data.remote.model.TVAuthenticationDTO
 import com.charan.shared.data.repository.SupabaseRepo
 import com.charan.shared.utils.AppConstants
@@ -35,7 +37,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
 import java.util.UUID
-import kotlin.coroutines.coroutineContext
 
 class SupabaseRepoImpl(
     private val supabaseClient: SupabaseClient,
@@ -44,7 +45,10 @@ class SupabaseRepoImpl(
 
     companion object {
         private const val TABLE_CHANNELS = "channels"
+
+        private const val TABLE_DEVICE_PAIRING_SESSION = "device_pairing_sessions"
     }
+    private val jsonParser = Json { ignoreUnknownKeys = true }
     private val client = supabaseClient.client
     override suspend fun insertChannelData(channelContentDto: List<ChannelDTO>): Flow<ProcessState<List<ChannelDTO>>> =
         flow{
@@ -271,7 +275,14 @@ class SupabaseRepoImpl(
         return client.auth.currentUserOrNull()?.email
     }
 
-    override suspend fun getProfileImageUrl(): String? {
-        return client.auth.currentUserOrNull()?.identities?.get(0)?.identityData?.get("avatar_url").toString().substringAfter("\"").substringBefore("\"")
+
+    override suspend fun getAccountInfo(): AccountInfo {
+        val userMetaDataJson = client.auth.currentUserOrNull()?.userMetadata.toString()
+        val userMetaData = Json.decodeFromString<UserMetaData>(userMetaDataJson)
+        return AccountInfo(
+            userName = userMetaData.name.ifEmpty { userMetaData.fullName },
+            email = getEmail() ?:"",
+            profilePicUrl = userMetaData.avatarUrl
+        )
     }
 }

@@ -2,6 +2,7 @@ package com.charan.shared.data.repository
 
 
 import com.charan.shared.data.remote.model.ChannelDTO
+import com.charan.shared.data.model.AccountInfo
 import com.charan.shared.utils.ProcessState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +29,5 @@ interface SupabaseRepo {
 
     suspend fun loadSession() : Boolean
     suspend fun getEmail() : String?
-
-    suspend fun getProfileImageUrl() : String?
+    suspend fun getAccountInfo(): AccountInfo
 }

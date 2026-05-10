@@ -52,6 +52,7 @@ import com.charan.setupBox.presentation.common.components.CustomTooltipBox
 import com.charan.setupBox.presentation.common.components.ThumbnailImage
 import com.charan.setupBox.presentation.common.model.DropDownItemData
 import com.charan.setupBox.presentation.home.components.SyncStatusIndicators
+import com.charan.setupBox.ui.theme.indexItemFor
 
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -193,9 +194,7 @@ fun HomeScreen(
 
                                 }
                             },
-
-                            index = item,
-                            count = state.allChannelData.size,
+                            index = state.allChannelData.indexItemFor(item),
                             onClick = {
                                 homeViewModel.onEvent(HomeEvent.OnChannelClick(channelData.id))
                             },

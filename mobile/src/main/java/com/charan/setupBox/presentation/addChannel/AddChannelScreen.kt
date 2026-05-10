@@ -30,10 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.charan.setupBox.presentation.addChannel.components.CustomTextField
 import com.charan.setupBox.presentation.addChannel.components.CustomTextFieldForPackages
-import com.charan.setupBox.presentation.addChannel.components.CustomAlertDialog
 import com.charan.setupBox.presentation.addChannel.components.PreviewAlertBox
 import com.charan.setupBox.presentation.addChannel.components.PreviewButton
 import com.charan.setupBox.presentation.addChannel.components.SelectCategoryField
+import com.charan.setupBox.presentation.common.components.CustomAlertDialog
 import com.charan.setupBox.presentation.common.components.CustomAppBar
 import com.charan.setupBox.presentation.common.model.DropDownItemData
 
@@ -84,7 +84,7 @@ fun AddChannelScreen(
 
     if (state.showDeleteConfirmation) {
         CustomAlertDialog(
-            title = "Delete Channel",
+            titleText = "Delete Channel",
             onDismiss = {
                 viewModel.onEvent(AddChannelEvent.OnToggleDeleteConfirmation)
             },
@@ -93,10 +93,9 @@ fun AddChannelScreen(
                 viewModel.onEvent(AddChannelEvent.OnDelete)
             },
             confirmButtonText = "Delete",
-            dismissButtonText = "Cancel"
-        ) {
-            Text("Are you sure you want to delete this channel?")
-        }
+            dismissButtonText = "Cancel",
+            descriptionText = "Are you sure you want to delete this channel?"
+        )
     }
 
     Scaffold(
