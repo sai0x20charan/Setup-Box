@@ -122,6 +122,11 @@ fun NavigationAppHost(
                 viewModel = hiltViewModel(settingsEntry),
                 navigateToBack = {
                     navHostController.popBackStack()
+                },
+                navigateToLoginScreen = {
+                    navHostController.navigate(LoginScreenNav) {
+                        popUpTo(0)
+                    }
                 }
 
             )

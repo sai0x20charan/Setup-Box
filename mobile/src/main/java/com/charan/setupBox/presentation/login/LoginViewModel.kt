@@ -40,7 +40,6 @@ class LoginViewModel @Inject constructor(
             when(it){
                 is ProcessState.Error -> {
                     handleLoading(false)
-                    Log.e("LoginViewModel", "Error during Google authentication: ${it.exception}")
                     sendEffect(LoginEffect.ShowError(it.exception))
                 }
                 is ProcessState.Loading -> {
@@ -62,7 +61,7 @@ class LoginViewModel @Inject constructor(
     private fun handleLoading(isLoading: Boolean){
         _state.update { currentState->
             currentState.copy(
-                isLoading = isLoading
+                isAuthenticating = isLoading
             )
         }
     }

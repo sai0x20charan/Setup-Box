@@ -1,17 +1,21 @@
 package com.charan.shared.data.repository
 
-import com.charan.shared.data.remote.model.ChannelContentDto
+
+import com.charan.shared.data.remote.model.ChannelDTO
+import com.charan.shared.data.model.AccountInfo
+import com.charan.shared.data.remote.model.DevicePairingSessionDTO
 import com.charan.shared.utils.ProcessState
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 
 interface SupabaseRepo {
-    suspend fun insertChannelData(channelContentDto: List<ChannelContentDto>) : Flow<ProcessState<List<ChannelContentDto>>>
-    suspend fun getData():Flow<ProcessState<List<ChannelContentDto>>>
+    suspend fun insertChannelData(channelContentDto: List<ChannelDTO>) : Flow<ProcessState<List<ChannelDTO>>>
+    suspend fun getData():Flow<ProcessState<List<ChannelDTO>>>
     suspend fun authenticateGoogleIdToken(): Flow<ProcessState<Boolean>>
     suspend fun attachEmailIdToCode(code : String) : Flow<ProcessState<Boolean>>
-    suspend fun generateAuthenticationCode() : Flow<ProcessState<String>>
+    suspend fun generatePairingCode() : Flow<ProcessState<String>>
 
-    suspend fun observeCodeAuthenticationStatus(code : String): Flow<ProcessState<String>>
+    suspend fun observePairingCodeStatus(code : String): Flow<ProcessState<String>>
 
     suspend fun authenticationBySessionId(code : String)
 
@@ -26,6 +30,5 @@ interface SupabaseRepo {
 
     suspend fun loadSession() : Boolean
     suspend fun getEmail() : String?
-
-    suspend fun getProfileImageUrl() : String?
+    suspend fun getAccountInfo(): AccountInfo
 }

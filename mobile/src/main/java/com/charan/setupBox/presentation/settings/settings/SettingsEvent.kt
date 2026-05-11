@@ -11,4 +11,12 @@ sealed class SettingsEvent {
     data class OnAuthenticateCodeChange(val code : String) : SettingsEvent()
 
     data object OnAuthenticateClick : SettingsEvent()
+
+    data object OnNavigateBack : SettingsEvent()
+
+    data object OnOpenSourceLicensesClick : SettingsEvent()
+
+    data object OnOpenGitHubClick : SettingsEvent()
+
+    data object OnToggleLogoutDialog : SettingsEvent()
 }

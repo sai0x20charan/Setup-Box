@@ -1,5 +1,6 @@
 package com.charan.shared.data.repository.impl
 
+import android.util.Log
 import com.charan.shared.data.local.dao.ChannelDao
 import com.charan.shared.data.local.entity.ChannelEntity
 import com.charan.shared.data.repository.ChannelLocalRepository
@@ -15,9 +16,9 @@ class ChannelLocalRepositoryImpl @Inject constructor(
 
     override suspend fun deleteByUuid(uuid: String) = channelDao.deleteByUuid(uuid)
 
-    override fun getAllData(): Flow<List<ChannelEntity>> = channelDao.getAllData()
+    override fun getAllActiveData(): Flow<List<ChannelEntity>> = channelDao.getAllActiveData()
 
-    override suspend fun getById(id: Long): ChannelEntity {
+    override suspend fun getById(id: String): ChannelEntity {
         return channelDao.getAllData(id)
     }
 

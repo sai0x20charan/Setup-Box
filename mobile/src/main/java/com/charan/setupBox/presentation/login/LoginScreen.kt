@@ -14,7 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,8 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.charan.setupBox.R
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.compose.auth.ui.ProviderButtonContent
+import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.flow.collectLatest
 
+@OptIn(AuthUiExperimental::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel= hiltViewModel(),
@@ -62,7 +70,8 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it),
+                .padding(it)
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -80,36 +89,18 @@ fun LoginScreen(
             )
 
             Button(
-                onClick = { viewModel.onEvent(LoginEvent.OnLoginWithGoogleClick) },
-                modifier = Modifier
-                    .animateContentSize()
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp),
-                enabled = !state.isLoading
+                onClick = {viewModel.onEvent(LoginEvent.OnLoginWithGoogleClick)},
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.fillMaxWidth().animateContentSize(),
+                enabled = !state.isAuthenticating
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.applogo),
-                        contentDescription = null
+                ProviderButtonContent(Google)
+                Spacer(modifier = Modifier.width(8.dp))
+                if(state.isAuthenticating){
+                    LoadingIndicator(
+                        modifier = Modifier.size(ButtonDefaults.IconSize),
+
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        "Continue with Google",
-                        modifier = Modifier
-                            .animateContentSize()
-                            .then(
-                                if (state.isLoading) Modifier.padding(end = 10.dp) else Modifier
-                            )
-                    )
-                    AnimatedVisibility(visible = state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .fillMaxWidth(),
-                            strokeCap = StrokeCap.Round,
-                            strokeWidth = 3.dp
-                        )
-                    }
                 }
             }
         }

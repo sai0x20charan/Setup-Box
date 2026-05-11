@@ -7,5 +7,7 @@ sealed class SettingsEffect {
 
         object NavigateBack : SettingsEffect()
 
-        data class ShowMessage(val message : String) : SettingsEffect()
+        data class ShowToast(val message : String) : SettingsEffect()
+
+        data class OpenLink(val url : String) : SettingsEffect()
 }

@@ -90,7 +90,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun observeData() = viewModelScope.launch(Dispatchers.IO) {
-        channelLocalRepository.getAllData().collectLatest {
+        channelLocalRepository.getAllActiveData().collectLatest {
             val channels = it.toChannelDataList()
             val categories = channels.groupBy { it.channelCategory }.map {
                 Log.d("TAG", "observeData: ${it.key}")
@@ -119,10 +119,12 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun initAccountData() = viewModelScope.launch {
+        val accountInfo = supabaseRepo.getAccountInfo()
         _state.update {
             it.copy(
-                email = supabaseRepo.getEmail() ?: "",
-                profileURL = supabaseRepo.getProfileImageUrl() ?: ""
+                email = accountInfo.email,
+                profileURL = accountInfo.profilePicUrl,
+                userName = accountInfo.userName
             )
         }
     }

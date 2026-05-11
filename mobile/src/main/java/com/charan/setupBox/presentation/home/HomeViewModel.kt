@@ -29,12 +29,13 @@ class HomeViewModel @Inject constructor(
     val homeEffect = _homeEffects.asSharedFlow()
 
     init {
-        fetchDataFromRemote()
-        loadData()
+        observeLocalChannelData()
+        observeSyncStatus()
+        fetchRemoteChannelData()
     }
 
-    private fun loadData() = viewModelScope.launch(Dispatchers.IO){
-        channelLocalRepository.getAllData().collectLatest { data->
+    private fun observeLocalChannelData() = viewModelScope.launch(Dispatchers.IO) {
+        channelLocalRepository.getAllActiveData().collectLatest { data ->
             _homeState.update {
                 it.copy(
                     allChannelData = data.toChannelDataList()
@@ -43,17 +44,20 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun fetchDataFromRemote() = viewModelScope.launch(Dispatchers.IO) {
+    private fun fetchRemoteChannelData() = viewModelScope.launch(Dispatchers.IO) {
         syncManager.fetchAndUpdateData().collectLatest {
-            when(it){
+            when (it) {
                 is ProcessState.Error -> {
-                    handleEffects(HomeEffect.ShowError(it.exception))
+                    handleLoading(false)
+                    sendEffect(HomeEffect.ShowError(it.exception))
                 }
-                is ProcessState.Loading -> {
-                        handleLoading(true)
 
+                is ProcessState.Loading -> {
+                    handleLoading(true)
                 }
+
                 ProcessState.NotDetermined -> {}
+
                 is ProcessState.Success<*> -> {
                     handleLoading(false)
                 }
@@ -61,21 +65,43 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun observeSyncStatus() = viewModelScope.launch {
+        syncManager.observeSyncStatus().collectLatest { status ->
+            _homeState.update {
+                it.copy(
+                    syncState = it.syncState.copy(
+                        isSyncing = status.isSyncing,
+                        hasError = status.hasError,
+                        errorMessage = status.errorMessage
+                    )
+                )
+            }
+        }
+    }
+
+    private fun syncData() = viewModelScope.launch (Dispatchers.IO){
+        syncManager.syncData()
+    }
+
     fun onEvent(event : HomeEvent){
         when(event){
             is HomeEvent.OnChannelClick -> {
-                handleEffects(HomeEffect.NavigateToAddChannelScreen(event.id))
+                sendEffect(HomeEffect.NavigateToAddChannelScreen(event.id))
             }
             HomeEvent.OnRefresh -> {
-                fetchDataFromRemote()
+                fetchRemoteChannelData()
             }
             HomeEvent.OnSettingsClick -> {
-                handleEffects(HomeEffect.NavigateToSettingsScreen)
+                sendEffect(HomeEffect.NavigateToSettingsScreen)
             }
             HomeEvent.ToggleShowDropDown -> {
                 handleShowDropDown()
 
             }
+
+                HomeEvent.OnSyncClick -> {
+                   syncData()
+                }
         }
     }
 
@@ -90,13 +116,13 @@ class HomeViewModel @Inject constructor(
     private fun handleLoading(isLoading: Boolean){
         _homeState.update { currentState->
             currentState.copy(
-                loading = isLoading
+                isFetchingData = isLoading
             )
         }
     }
 
 
-    private fun handleEffects(effect: HomeEffect) = viewModelScope.launch{
+    private fun sendEffect(effect: HomeEffect) = viewModelScope.launch{
         _homeEffects.emit(effect)
 
 

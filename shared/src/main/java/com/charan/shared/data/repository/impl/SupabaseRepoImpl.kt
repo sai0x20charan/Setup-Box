@@ -5,15 +5,19 @@ import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.charan.shared.BuildConfig
+import com.charan.shared.data.model.AccountInfo
 import com.charan.shared.data.remote.SupabaseClient
-import com.charan.shared.data.remote.model.ChannelContentDto
+import com.charan.shared.data.remote.model.ChannelDTO
+import com.charan.shared.data.remote.model.DevicePairingSessionDTO
+import com.charan.shared.data.remote.model.PairingSessionStatus
+import com.charan.shared.data.remote.model.UserMetaData
 import com.charan.shared.data.remote.model.TVAuthenticationDTO
 import com.charan.shared.data.repository.SupabaseRepo
 import com.charan.shared.utils.AppConstants
-import com.charan.shared.utils.AppConstants.SETUPBOXCONTENT
 import com.charan.shared.utils.ProcessState
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
@@ -21,39 +25,56 @@ import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.filter.FilterOperation
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.realtime.selectAsFlow
+import io.github.jan.supabase.realtime.selectSingleValueAsFlow
 import io.ktor.client.call.body
+import io.ktor.http.HttpMethod
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.UUID
-import kotlin.coroutines.coroutineContext
 
 class SupabaseRepoImpl(
     private val supabaseClient: SupabaseClient,
     private val context : Context
 ) : SupabaseRepo {
+
+    companion object {
+        private const val TABLE_CHANNELS = "channels"
+
+        private const val TABLE_DEVICE_PAIRING_SESSION = "device_pairing_sessions"
+
+        private const val EDGE_FUNCTION_GENERATE_PAIRING_CODE= "create-device-pairing-session"
+
+        private const val EDGE_FUNCTION_HANDLE_DEVICE_PAIRING_CODE = "handle-device-pairing-code"
+
+         const val TVAUTHENTICATION = "TVAuthentication"
+    }
+    private val jsonParser = Json { ignoreUnknownKeys = true }
     private val client = supabaseClient.client
-    override suspend fun insertChannelData(channelContentDto: List<ChannelContentDto>): Flow<ProcessState<List<ChannelContentDto>>> =
+    override suspend fun insertChannelData(channelContentDto: List<ChannelDTO>): Flow<ProcessState<List<ChannelDTO>>> =
         flow{
             emit(ProcessState.Loading())
             try {
-                val data = client.from(SETUPBOXCONTENT).upsert(
+                val data = client.from(TABLE_CHANNELS).upsert(
                     values = channelContentDto
-
                 ) {
-                    onConflict = "id"
                     select()
-                }.decodeList<ChannelContentDto>()
+                }.decodeList<ChannelDTO>()
                 emit(ProcessState.Success(data))
             } catch (e: Exception) {
                 Log.d("SupabaseRepoImpl", "Error inserting channel data: ${e.message}")
@@ -62,10 +83,10 @@ class SupabaseRepoImpl(
 
         }
 
-    override suspend fun getData(): Flow<ProcessState<List<ChannelContentDto>>> =flow{
+    override suspend fun getData(): Flow<ProcessState<List<ChannelDTO>>> =flow{
         emit(ProcessState.Loading())
         try {
-            val data = client.from(SETUPBOXCONTENT).select().decodeList<ChannelContentDto>()
+            val data = client.from(TABLE_CHANNELS).select().decodeList<ChannelDTO>()
             if(data.isNotEmpty()){
                 emit(ProcessState.Success(data))
             } else {
@@ -127,20 +148,14 @@ class SupabaseRepoImpl(
         emit(ProcessState.Loading())
         val email = getEmail()
         try {
-            client.from("TVAuthentication").update(
-                {
-                    set("email", email)
+            client.functions.invoke(
+                EDGE_FUNCTION_HANDLE_DEVICE_PAIRING_CODE,
+                body = buildJsonObject {
+                    put("code", code)
+                    put("email", email ?: "")
                 }
             )
-                {
-                    filter {
-                        eq("tv_code",code)
-                        eq("isAuthenticated",false)
-                    }
-                }
             emit(ProcessState.Success(true))
-
-
         } catch (e: Exception) {
             Log.d("SupabaseRepoImpl", "Error attaching email ID to code: ${e.message}")
             emit(ProcessState.Error(e.message.toString()))
@@ -148,12 +163,12 @@ class SupabaseRepoImpl(
 
     }
 
-    override suspend fun generateAuthenticationCode(): Flow<ProcessState<String>> =flow{
+    override suspend fun generatePairingCode(): Flow<ProcessState<String>> =flow{
         emit(ProcessState.Loading())
         try {
-            val response = client.functions.invoke(AppConstants.GENERATE_AUTHENTICATION_CODE_FUNCTION)
-            val code = response.body<TVAuthenticationDTO>()
-            emit(ProcessState.Success(code.tv_code ?: ""))
+            val response = client.functions.invoke(EDGE_FUNCTION_GENERATE_PAIRING_CODE)
+            val code = response.body<DevicePairingSessionDTO>()
+            emit(ProcessState.Success(code.code ?: ""))
 
         } catch (e: Exception) {
             Log.d("SupabaseRepoImpl", "Error adding code to TV table: ${e.message}")
@@ -161,30 +176,22 @@ class SupabaseRepoImpl(
         }
 
     }
-
-    override suspend fun observeCodeAuthenticationStatus(code: String): Flow<ProcessState<String>> =
+    @OptIn(SupabaseExperimental::class)
+    override suspend fun observePairingCodeStatus(code: String): Flow<ProcessState<String>> =
         channelFlow{
-            val channel = supabaseClient.client.channel(AppConstants.TVAuthenticationChannelId) {
-            }
-            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-                table = AppConstants.TVAUTHENTICATION
-                filter("tv_code", FilterOperator.EQ, code)
-                filter("isAuthenticated",FilterOperator.EQ,false)
-            }
-            changeFlow.onEach {
-                when(it){
-                    is PostgresAction.Update -> {
-                        val data = Json.decodeFromString<TVAuthenticationDTO>(it.record.toString())
-                       if(!(data.email.isNullOrEmpty())){
-                              send(ProcessState.Success(data.email))
-                           channel.unsubscribe()
-                       }
-
+            val sessionStatus: Flow<DevicePairingSessionDTO> =
+                client
+                    .from(TABLE_DEVICE_PAIRING_SESSION)
+                    .selectSingleValueAsFlow(DevicePairingSessionDTO::code){
+                        DevicePairingSessionDTO::code eq code
+                        DevicePairingSessionDTO::status neq PairingSessionStatus.VERIFIED.status
                     }
-                    else -> Unit
+            sessionStatus.collect {
+                if(it.status == PairingSessionStatus.OTP_SENT.status) {
+                    trySend(ProcessState.Success(it.email ?: ""))
+
                 }
-            }.launchIn(CoroutineScope(coroutineContext))
-            channel.subscribe()
+            }
         }
 
     override suspend fun authenticationBySessionId(code: String) {
@@ -270,7 +277,14 @@ class SupabaseRepoImpl(
         return client.auth.currentUserOrNull()?.email
     }
 
-    override suspend fun getProfileImageUrl(): String? {
-        return client.auth.currentUserOrNull()?.identities?.get(0)?.identityData?.get("avatar_url").toString().substringAfter("\"").substringBefore("\"")
+
+    override suspend fun getAccountInfo(): AccountInfo {
+        val userMetaDataJson = client.auth.currentUserOrNull()?.userMetadata?.toString() ?: "{}"
+        val userMetaData = Json.decodeFromString<UserMetaData>(userMetaDataJson)
+        return AccountInfo(
+            userName = userMetaData.name.ifEmpty { userMetaData.fullName },
+            email = getEmail() ?:"",
+            profilePicUrl = userMetaData.avatarUrl
+        )
     }
 }

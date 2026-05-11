@@ -11,6 +11,7 @@ sealed class AddChannelEvent {
     data class OnPackageChange(val packageName: String) : AddChannelEvent()
     data object OnToggleCategoryDropDown : AddChannelEvent()
     data object OnTogglePreviewBox : AddChannelEvent()
+    data object OnToggleDeleteConfirmation : AddChannelEvent()
     data object OnSave : AddChannelEvent()
     data object OnDelete : AddChannelEvent()
 

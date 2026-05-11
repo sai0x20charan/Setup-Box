@@ -18,13 +18,11 @@ fun AvatarImage(
         this.shape= CircleShape
         this.clip=true
 
-    }
-
-    ){
+    }){
         AsyncImage(
             model = imageUrl,
             contentDescription = null,
-            modifier=Modifier.size(30.dp),
+            modifier=Modifier.size(100.dp),
             contentScale = ContentScale.Fit
         )
 

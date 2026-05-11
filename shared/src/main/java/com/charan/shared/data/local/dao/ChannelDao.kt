@@ -17,23 +17,23 @@ interface ChannelDao {
     @Update
     suspend fun update(channel: ChannelEntity)
 
-    @Query("DELETE FROM channels WHERE uuid = :uuid")
-    suspend fun deleteByUuid(uuid: String)
+    @Query("DELETE FROM channels WHERE id = :id")
+    suspend fun deleteByUuid(id: String)
 
-    @Query("SELECT * FROM channels")
-    fun getAllData(): Flow<List<ChannelEntity>>
+    @Query("SELECT * FROM channels WHERE isDeleted = 0")
+    fun getAllActiveData(): Flow<List<ChannelEntity>>
 
     @Query("SELECT * FROM channels WHERE id = :id")
-    suspend fun getAllData(id: Long): ChannelEntity
+    suspend fun getAllData(id: String): ChannelEntity
 
     @Query("SELECT * FROM channels WHERE isSynced = 0")
     fun getUnSyncedData(): Flow<List<ChannelEntity>>
 
-    @Query("UPDATE channels SET isSynced = 1 WHERE uuid = :uuid")
-    suspend fun markAsSynced(uuid: String)
+    @Query("UPDATE channels SET isSynced = 1 WHERE id = :id")
+    suspend fun markAsSynced(id: String)
 
-    @Query("UPDATE channels SET isDeleted = 1 and isSynced = 0 WHERE uuid = :uuid")
-    suspend fun markAsDeleted(uuid: String)
+    @Query("UPDATE channels SET isDeleted = 1 , isSynced = 0 WHERE id = :id")
+    suspend fun markAsDeleted(id: String)
 
     @Query("SELECT COUNT(*) FROM channels WHERE isSynced = 0")
     fun getUnSyncedDataCount(): Flow<Int>

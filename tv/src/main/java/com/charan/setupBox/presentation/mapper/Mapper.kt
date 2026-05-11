@@ -6,12 +6,11 @@ import com.charan.shared.data.local.entity.ChannelEntity
 
 fun ChannelEntity.toChannelData() : ChannelData {
     return ChannelData(
-        channelName = this.channelName,
+        channelName = this.name,
         channelCategory = this.category,
-        channelImage = this.channelPhoto,
-        channelURL = this.channelLink,
+        channelImage = this.thumbnailURL,
+        channelURL = this.url,
         channelAppPackage = this.appPackage,
-        channelId = this.id ?: 0L
     )
 }
 

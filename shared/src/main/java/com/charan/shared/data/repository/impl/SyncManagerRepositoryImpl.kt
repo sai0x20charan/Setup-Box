@@ -1,92 +1,113 @@
 package com.charan.shared.data.repository.impl
 
-import com.charan.shared.data.mappers.toChannelContentDto
-import com.charan.shared.data.mappers.toChannelContentDtoList
+import android.util.Log
+import com.charan.shared.data.mappers.toChannelDtoList
 import com.charan.shared.data.mappers.toChannelEntity
 import com.charan.shared.data.repository.ChannelLocalRepository
 import com.charan.shared.data.repository.SupabaseRepo
 import com.charan.shared.data.repository.SyncManager
 import com.charan.shared.utils.ProcessState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
+import com.charan.shared.utils.SyncStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class SyncManagerRepositoryImpl(
     private val channelLocalRepository: ChannelLocalRepository,
     private val supabaseRepo: SupabaseRepo
-): SyncManager {
-    override suspend fun syncData() =  coroutineScope{
-        try {
-            channelLocalRepository.getUnSyncedData().collectLatest { list->
-                supabaseRepo.insertChannelData(
-                    list.toChannelContentDtoList(supabaseRepo.getEmail() ?: "")
-                ).collectLatest {
-                    when(it){
+) : SyncManager {
+
+    private val syncStatus = MutableStateFlow(SyncStatus())
+
+    private val syncMutex = Mutex()
+
+    override suspend fun syncData() {
+        if (syncMutex.isLocked) return
+
+        syncMutex.withLock {
+            try {
+                val unSyncedList = channelLocalRepository
+                    .getUnSyncedData()
+                    .first()
+                if (unSyncedList.isEmpty()) {
+                    syncStatus.value = SyncStatus()
+                    return
+                }
+                syncStatus.value = SyncStatus(isSyncing = true)
+                supabaseRepo.insertChannelData(unSyncedList
+                    .toChannelDtoList(supabaseRepo.getEmail() ?: "")
+                ).collectLatest { result ->
+                    when (result) {
                         is ProcessState.Success -> {
-                            it.data.forEach { data->
-                                val channelData = data.toChannelEntity().copy(isSynced = true)
-                                channelLocalRepository.upsert(channelData)
-
+                            result.data.forEach { data ->
+                                val syncedEntity = data
+                                    .toChannelEntity()
+                                    .copy(isSynced = true)
+                                channelLocalRepository.upsert(syncedEntity)
                             }
-
+                            syncStatus.value = SyncStatus()
                         }
                         is ProcessState.Error -> {
-
+                            syncStatus.value = SyncStatus(hasError = true,errorMessage = result.exception)
                         }
-                        else -> {}
+                        else -> Unit
                     }
-
                 }
 
-
-            }
-
-        } catch (e: Exception) {
-                println("Error during sync: ${e.message}")
-
-        }
-    }
-    override suspend fun syncListener() = coroutineScope{
-        channelLocalRepository.getUnSyncedDataCount().collectLatest { value ->
-            if(value > 0){
-                println("There are $value unsynced items. Starting sync...")
-
-                syncData()
-
-            } else {
-                println("All items are synced.")
+            } catch (e: Exception) {
+                syncStatus.value = SyncStatus(hasError = true,errorMessage = e.message)
+                println("Sync Error: ${e.message}")
             }
         }
     }
 
-    override suspend fun fetchAndUpdateData(): Flow<ProcessState<Boolean>> = channelFlow{
-        send(ProcessState.Loading())
-        try {
-            supabaseRepo.getData().collectLatest {
-                when(it){
-                    is ProcessState.Success -> {
-                        val channelList = it.data.map { data->
-                            data.toChannelEntity().copy(isSynced = true)
-                        }
-                        channelList.forEach { channel->
-                            channelLocalRepository.upsert(channel)
-                        }
-                        send(ProcessState.Success(true))
-                    }
-                    is ProcessState.Error -> {
-                        send(ProcessState.Error(it.exception))
-                    }
-                    else -> {}
+    override suspend fun syncListener() {
+        channelLocalRepository
+            .getUnSyncedDataCount()
+            .distinctUntilChanged()
+            .collectLatest { count ->
+                println("Unsynced Count: $count")
+                if (count > 0) {
+                    syncData()
                 }
             }
+    }
 
-        } catch (e: Exception) {
-            send(ProcessState.Error(e.message.toString()))
+    override suspend fun fetchAndUpdateData(): Flow<ProcessState<Boolean>> =
+        channelFlow {
+            send(ProcessState.Loading())
+            try {
+                supabaseRepo.getData().collectLatest { result ->
+                    when (result) {
+                        is ProcessState.Success -> {
+                            val channelList = result.data.map { data ->
+                                data.toChannelEntity()
+                                    .copy(isSynced = true)
+                            }
+                            channelList.forEach { channel ->
+                                channelLocalRepository.upsert(channel)
+                            }
+                            send(ProcessState.Success(true))
+                        }
+                        is ProcessState.Error -> {
+                            send(ProcessState.Error( result.exception))
+                        }
+                        else -> Unit
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.d("TAG", "fetchAndUpdateData: ${e.message}")
+                send(ProcessState.Error(e.message.toString()))
+            }
         }
 
-    }
+    override fun observeSyncStatus(): StateFlow<SyncStatus> =
+        syncStatus
 }

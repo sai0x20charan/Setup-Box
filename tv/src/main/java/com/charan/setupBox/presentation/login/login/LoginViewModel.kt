@@ -26,11 +26,11 @@ class LoginViewModel @Inject constructor(
     val effect = _effect.asSharedFlow()
 
     init {
-        getAuthenticationCode()
+        getPairingCode()
     }
 
-    private fun getAuthenticationCode() = viewModelScope.launch {
-        supabaseRepo.generateAuthenticationCode().collectLatest {
+    private fun getPairingCode() = viewModelScope.launch {
+        supabaseRepo.generatePairingCode().collectLatest {
             when (it) {
                 is ProcessState.Error -> {
                     handleLoading(false)
@@ -50,7 +50,7 @@ class LoginViewModel @Inject constructor(
     }
 
     private fun observeOTPStatus(code: String) = viewModelScope.launch {
-        supabaseRepo.observeCodeAuthenticationStatus(code).collectLatest {
+        supabaseRepo.observePairingCodeStatus(code).collectLatest {
             when (it) {
                 is ProcessState.Error -> {
                     handleEffects(LoginEffect.ShowToast(it.exception))
@@ -58,22 +58,7 @@ class LoginViewModel @Inject constructor(
                 is ProcessState.Loading -> {}
                 ProcessState.NotDetermined -> {}
                 is ProcessState.Success<String> -> {
-                    handleOTPLogin(it.data)
-                }
-            }
-        }
-    }
-
-    private fun handleOTPLogin(email: String) = viewModelScope.launch {
-        supabaseRepo.sentOTPLogin(email).collectLatest {
-            when (it) {
-                is ProcessState.Error -> {
-                    handleEffects(LoginEffect.ShowToast(it.exception))
-                }
-                is ProcessState.Loading -> {}
-                ProcessState.NotDetermined -> {}
-                is ProcessState.Success<*> -> {
-                    handleEffects(LoginEffect.NavigateToOTPScreen(email))
+                    handleEffects(LoginEffect.NavigateToOTPScreen(it.data))
                 }
             }
         }

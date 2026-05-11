@@ -7,11 +7,12 @@ import java.util.UUID
 fun ChannelEntity.toChannelData() : ChannelData {
     return ChannelData(
         id = this.id,
-        channelLink = this.channelLink,
-        channelName = this.channelName,
-        channelPhoto = this.channelPhoto,
+        channelLink = this.url,
+        channelName = this.name,
+        channelPhoto = this.thumbnailURL,
         category = this.category,
         appPackage = this.appPackage,
+        isSynced = this.isSynced,
     )
 }
 
@@ -23,14 +24,13 @@ fun ChannelData.toChannelEntity(
     isEdit : Boolean = false
 ) : ChannelEntity {
     return ChannelEntity(
-        id = if(isEdit) this.id else 0L,
-        channelName = this.channelName,
+        id = if(isEdit) this.id else UUID.randomUUID().toString(),
+        name = this.channelName,
         appPackage = this.appPackage,
         category = this.category,
         isSynced = false,
-        channelLink = this.channelLink,
-        channelPhoto = this.channelPhoto,
-        uuid = if(isEdit) this.uuid else UUID.randomUUID().toString()
+        url = this.channelLink,
+        thumbnailURL = this.channelPhoto,
     )
 }
 

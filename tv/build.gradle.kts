@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
+    implementation(libs.androidx.material3.tv)
 
     // Supabase
     implementation(platform(libs.supabase.bom))

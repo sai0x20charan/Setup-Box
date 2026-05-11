@@ -1,38 +1,36 @@
 package com.charan.shared.data.mappers
 
 import com.charan.shared.data.local.entity.ChannelEntity
-import com.charan.shared.data.remote.model.ChannelContentDto
+import com.charan.shared.data.remote.model.ChannelDTO
 
-fun ChannelContentDto.toChannelEntity() : ChannelEntity {
+fun ChannelDTO.toChannelEntity() : ChannelEntity {
     return ChannelEntity(
-        id = this.id ?: 0L,
-        uuid = this.uuid ?: "",
-        channelName = this.channelName ?: "",
-        channelPhoto = this.channelPhoto ?: "",
-        channelLink = this.channelLink ?: "",
+        id = this.id ?: "",
+        name = this.name ?: "",
+        thumbnailURL = this.thumbnailURL ?: "",
+        url = this.url ?: "",
         category = this.category ?: "",
-        appPackage = this.app_Package ?: "",
+        appPackage = this.appPackage ?: "",
         isSynced = true
     )
 }
 
-fun List<ChannelContentDto>.toChannelEntityList() : List<ChannelEntity> {
+fun List<ChannelDTO>.toChannelEntityList() : List<ChannelEntity> {
     return this.map { it.toChannelEntity() }
 }
 
-fun ChannelEntity.toChannelContentDto(email : String) : ChannelContentDto {
-    return ChannelContentDto(
+fun ChannelEntity.toChannelDto(email : String) : ChannelDTO {
+    return ChannelDTO(
         id = this.id,
-        uuid = this.uuid,
-        channelName = this.channelName,
-        channelPhoto = this.channelPhoto,
-        channelLink = this.channelLink,
-        app_Package = this.appPackage,
+        name = this.name,
+        thumbnailURL = this.thumbnailURL,
+        url = this.url,
         category = this.category,
+        appPackage = this.appPackage,
         email = email
     )
 }
 
-fun List<ChannelEntity>.toChannelContentDtoList(email : String) : List<ChannelContentDto> {
-    return this.map { it.toChannelContentDto(email) }
+fun List<ChannelEntity>.toChannelDtoList(email : String) : List<ChannelDTO> {
+    return this.map { it.toChannelDto(email) }
 }
