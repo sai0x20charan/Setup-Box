@@ -106,7 +106,7 @@ class SettingsViewModel @Inject constructor(
             when(it){
                 is ProcessState.Error -> {
                     handleAuthenticationLoading(false)
-                    sendEffect(SettingsEffect.ShowMessage(it.exception))
+                    sendEffect(SettingsEffect.ShowToast(it.exception))
 
                 }
                 is ProcessState.Loading -> {
@@ -114,7 +114,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 ProcessState.NotDetermined -> {}
                 is ProcessState.Success<*> -> {
-                    sendEffect(SettingsEffect.ShowMessage("TV Authenticated Successfully"))
+                    sendEffect(SettingsEffect.ShowToast("TV Authenticated Successfully"))
                     handleAuthenticationSheetToggle()
                     handleAuthenticateCodeChange("")
                     handleAuthenticationLoading(false)

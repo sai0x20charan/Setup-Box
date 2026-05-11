@@ -11,7 +11,6 @@ fun ChannelEntity.toChannelData() : ChannelData {
         channelImage = this.thumbnailURL,
         channelURL = this.url,
         channelAppPackage = this.appPackage,
-        channelId = this.id ?: 0L
     )
 }
 

@@ -16,7 +16,7 @@ object TVAppModule {
     @Singleton
     fun provideAppInfo(): AppInfo = AppInfo(
         versionName = BuildConfig.VERSION_NAME,
-        versionCode = BuildConfig.VERSION_CODE,
+        versionCode = BuildConfig.VERSION_CODE.toString(),
         isDebug = BuildConfig.DEBUG
     )
 }

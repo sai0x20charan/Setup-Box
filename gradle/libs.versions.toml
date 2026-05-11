@@ -22,6 +22,7 @@ material = "1.13.0"
 constraintlayout = "2.2.1"
 composeBom = "2026.04.01"
 material3Android = "1.5.0-alpha19"
+material3TV = "1.4.0"
 composeMaterial = "1.11.0"
 composeMaterialIconsExtendedAndroid = "1.7.8"
 navigationCompose = "2.9.8"
@@ -50,6 +51,7 @@ androidx-credentials = { module = "androidx.credentials:credentials", version.re
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-material3-android = { module = "androidx.compose.material3:material3-android", version.ref = "material3Android" }
+androidx-material3-tv = { module = "androidx.compose.material3:material3-android", version.ref = "material3TV" }
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 postgrest-kt = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt" }
